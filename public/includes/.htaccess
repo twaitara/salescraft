@@ -1,0 +1,9 @@
+# Block all direct web access to the includes folder (config, PHPMailer, helpers).
+# These files are only ever loaded server-side via require.
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>

@@ -32,19 +32,21 @@ file — no build step.
 ## Structure
 
 ```
-public/          Web root (point your vhost/docroot here)
-  index.html     The scorecard (standalone for now; becomes the PHP form)
-  assets/
-includes/        DB connection, mailer, shared config (config.php is gitignored)
-  config.example.php
-admin/           Consultant dashboard (submissions list)
-sql/             Database schema
+public/                    Web root — everything the server needs lives here
+  index.html               The scorecard
+  submit.php               Saves submission + emails the consultant
+  admin/                   Consultant dashboard (password-gated)
+  includes/                DB, mailer, config, PHPMailer (blocked via .htaccess)
+    config.example.php
+    config.php             (you create this; gitignored)
+sql/                       Database schema (imported manually, not deployed)
+.cpanel.yml                cPanel Git deploy: copies public/ → public_html/
 ```
 
 ## Local setup
 
-1. Copy `includes/config.example.php` to `includes/config.php` and fill in your
-   MySQL and SMTP details.
+1. Copy `public/includes/config.example.php` to `public/includes/config.php` and
+   fill in your MySQL and SMTP details.
 2. Create the database and import `sql/schema.sql`.
 3. Serve `public/` with PHP:
    ```
@@ -52,25 +54,29 @@ sql/             Database schema
    ```
 4. Open http://127.0.0.1:8000
 
-## Deploying to shared hosting (e.g. Hostinger)
+## Deploying via cPanel Git Version Control (Hostinger)
 
-Keep `includes/` **outside** the web root so config/credentials aren't served:
+`.cpanel.yml` copies the contents of `public/` into `public_html/` on every
+deploy. The whole app runs from the web root; `includes/` is blocked from direct
+web access by `public/includes/.htaccess`, and `config.php` only ever `return`s
+an array (it prints nothing even if hit directly). PHPMailer is vendored — no
+Composer needed on the server.
 
-```
-account_root/
-├─ includes/          ← upload here (NOT web-accessible)
-├─ admin/             ← upload here (or protect separately)
-├─ sql/
-└─ public_html/       ← contents of public/ go here (this is the web root)
-   ├─ index.html
-   └─ submit.php
-```
+**One-time setup on the server:**
 
-`submit.php` and the admin pages reference `../includes/...`, so `includes/`
-must sit one level above the web root, as shown. PHPMailer is vendored in
-`includes/PHPMailer/` — no Composer needed on the server.
+1. In cPanel → **Git Version Control**, clone/select this repo and **Pull** the
+   latest `main` (which now contains `.cpanel.yml`).
+2. Create the database (cPanel → MySQL Databases) and import `sql/schema.sql`
+   via phpMyAdmin.
+3. Create `public_html/includes/config.php` (copy from `config.example.php`) with
+   your DB, SMTP, consultant email and admin password. This file lives only on
+   the server — it is never in the repo, so deploys won't overwrite it.
+4. Back in Git Version Control, click **Deploy HEAD Commit**.
+
+> If deployment reports it can't expand `$HOME`, edit `.cpanel.yml` and replace
+> `$HOME` with your absolute home path (e.g. `/home/u123456789`).
 
 ## Notes
 
-`includes/config.php` holds credentials and is **not** committed — see
+`public/includes/config.php` holds credentials and is **not** committed — see
 `.gitignore`.
