@@ -1,10 +1,10 @@
 ---
 deployment:
   tasks:
-    # Deploy the contents of public/ into public_html/salescraft
-    # so the app is served at https://nineonetwo.online/salescraft
+    # Deploy the contents of public/ into the nineonetwo.online docroot,
+    # served at https://nineonetwo.online/salescraft
     # $HOME is the cPanel account home; if your host doesn't expand it,
     # replace $HOME with the absolute path, e.g. /home4/tonyketter
-    - export DEPLOYPATH=$HOME/public_html/salescraft
+    - export DEPLOYPATH=$HOME/nineonetwo.online/salescraft
     - /bin/mkdir -p $DEPLOYPATH
     - /bin/cp -R public/. $DEPLOYPATH/
