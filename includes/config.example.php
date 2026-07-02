@@ -34,4 +34,10 @@ return [
 
     // Base URL of the app (used to build shareable links in emails).
     'base_url' => 'http://127.0.0.1:8000',
+
+    // --- Admin dashboard ---
+    // Password to view submissions at /admin/. Change this.
+    'admin' => [
+        'password' => 'change-me',
+    ],
 ];

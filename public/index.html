@@ -129,6 +129,15 @@ body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;back
 svg.radar{max-width:460px;width:100%;height:auto}
 .actions{display:flex;gap:12px;justify-content:center;margin-top:26px;flex-wrap:wrap}
 .small{font-size:12px;color:var(--muted);text-align:center;margin-top:22px}
+.submitbar{display:flex;align-items:center;gap:12px;margin-top:22px;padding:14px 18px;border-radius:13px;font-size:14px;border:1px solid var(--line)}
+.submitbar svg{width:20px;height:20px;flex:none}
+.submitbar a{color:var(--brand);font-weight:600}
+.submitbar.idle{background:var(--brand-soft);color:var(--brand-d);border-color:#dce0fb}
+.submitbar.sending{background:#fffbeb;color:#92400e;border-color:#fde68a}
+.submitbar.sending svg{animation:spin 1s linear infinite}
+.submitbar.ok{background:#f0fdf4;color:#166534;border-color:#bbf7d0}
+.submitbar.error{background:#fef2f2;color:#991b1b;border-color:#fecaca}
+@keyframes spin{to{transform:rotate(360deg)}}
 
 @media(max-width:680px){
   .fields,.grid2{grid-template-columns:1fr}
@@ -286,9 +295,11 @@ function renderIntro(){
     <h2>Where is your sales engine leaking?</h2>
     <p class="sub">Score your business across <b>10 areas</b> and <b>40 questions</b>. After each section you'll get an instant score and diagnosis, then a full breakdown with your priority fixes. Takes about 6 minutes.</p>
     <div class="fields">
-      <div class="field"><label>Your name</label><input id="f-name" placeholder="Jane Doe" value="${state.meta.name||''}"></div>
-      <div class="field"><label>Company</label><input id="f-co" placeholder="Acme Ltd" value="${state.meta.company||''}"></div>
+      <div class="field"><label>Your name *</label><input id="f-name" placeholder="Jane Doe" value="${state.meta.name||''}"></div>
+      <div class="field"><label>Work email *</label><input id="f-email" type="email" placeholder="jane@acme.com" value="${state.meta.email||''}"></div>
+      <div class="field" style="grid-column:1/-1"><label>Company</label><input id="f-co" placeholder="Acme Ltd" value="${state.meta.company||''}"></div>
     </div>
+    <div id="intro-err" style="color:var(--s1);font-size:13px;margin-top:8px;display:none"></div>
     <div class="legend">
       <span class="chip"><span class="dot" style="background:var(--s1)"></span>1 · Not in place</span>
       <span class="chip"><span class="dot" style="background:var(--s3)"></span>3 · Partly / inconsistent</span>
@@ -301,8 +312,18 @@ function renderIntro(){
   lucide.createIcons();
 }
 function startForm(){
-  state.meta.name=document.getElementById('f-name').value;
-  state.meta.company=document.getElementById('f-co').value;
+  const name=document.getElementById('f-name').value.trim();
+  const email=document.getElementById('f-email').value.trim();
+  const err=document.getElementById('intro-err');
+  const emailOk=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  if(!name||!emailOk){
+    err.textContent = !name ? 'Please enter your name.' : 'Please enter a valid work email.';
+    err.style.display='block'; return;
+  }
+  state.meta.name=name;
+  state.meta.email=email;
+  state.meta.company=document.getElementById('f-co').value.trim();
+  state.submitted=false;              // fresh run → allow one submission
   step=1; save(); render();
 }
 
@@ -400,6 +421,8 @@ function renderResults(){
       </div>
     </div>
 
+    <div class="submitbar" id="subbar"></div>
+
     <div class="radar-card card" style="box-shadow:none;border-color:var(--line)">
       <h3 style="justify-content:center;margin-bottom:14px"><i data-lucide="radar"></i> Balance across all 10 areas</h3>
       ${radar(cats)}
@@ -424,9 +447,43 @@ function renderResults(){
       <button class="btn" onclick="window.print()"><i data-lucide="printer"></i> Print / Save PDF</button>
       <button class="btn primary" onclick="resetAll()"><i data-lucide="rotate-ccw"></i> Start over</button>
     </div>
-    <p class="small">${state.meta.name?state.meta.name+" · ":""}${state.meta.company||""} — 912 Sales Diagnostic. Your answers are saved on this device only.</p>
+    <p class="small">${state.meta.name?state.meta.name+" · ":""}${state.meta.company||""} — 912 Sales Diagnostic.</p>
   </div>`;
   lucide.createIcons();
+  window.__submitPayload={
+    client_name:state.meta.name||'', client_company:state.meta.company||'',
+    client_email:state.meta.email||'', answers:state.answers
+  };
+  updateSubmitBar();
+  if(!state.submitted) submitResults();   // auto-send once when results first appear
+}
+
+/* ---------- send results to the consultant ---------- */
+function updateSubmitBar(status){
+  const bar=document.getElementById('subbar'); if(!bar)return;
+  bar.className='submitbar '+(status||(state.submitted?'ok':'idle'));
+  if(state.submitted||status==='ok'){
+    bar.innerHTML=`<i data-lucide="check-circle"></i><div><b>Sent to your consultant.</b> They've been notified with your results.</div>`;
+  }else if(status==='sending'){
+    bar.innerHTML=`<i data-lucide="loader"></i><div>Sending your results to your consultant…</div>`;
+  }else if(status==='error'){
+    bar.innerHTML=`<i data-lucide="alert-triangle"></i><div><b>Couldn't send automatically.</b> <a href="#" onclick="submitResults();return false;">Try again</a></div>`;
+  }else{
+    bar.innerHTML=`<i data-lucide="send"></i><div>Ready to send your results to your consultant. <a href="#" onclick="submitResults();return false;">Send now</a></div>`;
+  }
+  lucide.createIcons();
+}
+async function submitResults(){
+  if(state.submitted) return;
+  updateSubmitBar('sending');
+  try{
+    const res=await fetch('submit.php',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(window.__submitPayload)});
+    const data=await res.json();
+    if(!res.ok||!data.ok) throw new Error(data.error||'failed');
+    state.submitted=true; save();
+    updateSubmitBar('ok');
+  }catch(e){ updateSubmitBar('error'); }
 }
 
 /* circular gauge */
