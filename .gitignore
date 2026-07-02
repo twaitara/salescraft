@@ -1,0 +1,20 @@
+# Secrets & local config
+includes/config.php
+
+# Dependencies
+/vendor/
+node_modules/
+
+# PHP / logs
+*.log
+error_log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Build / temp
+*.tmp
+/tmp/
