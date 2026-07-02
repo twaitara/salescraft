@@ -1,18 +1,32 @@
 <?php
 /**
- * Minimal session password gate for the admin area.
+ * Session password gate for the admin area.
  * Include at the top of every admin page: require __DIR__ . '/auth.php';
+ *
+ * Password source: the `admin_password_hash` setting (set via Settings). Until
+ * one is set, it falls back to config.php's admin.password so first login works.
  */
 declare(strict_types=1);
 
 require __DIR__ . '/../includes/bootstrap.php';
+require __DIR__ . '/../includes/brand.php';
 
 session_start();
 
+function sc_admin_check_password(string $input): bool
+{
+    global $CONFIG;
+    $hash = sc_setting('admin_password_hash');
+    if ($hash !== '') {
+        return password_verify($input, $hash);
+    }
+    $fallback = (string) ($CONFIG['admin']['password'] ?? '');
+    return $fallback !== '' && hash_equals($fallback, $input);
+}
+
 // Handle login submit.
 if (($_POST['_action'] ?? '') === 'login') {
-    $ok = hash_equals((string) $CONFIG['admin']['password'], (string) ($_POST['password'] ?? ''));
-    if ($ok) {
+    if (sc_admin_check_password((string) ($_POST['password'] ?? ''))) {
         session_regenerate_id(true);
         $_SESSION['sc_admin'] = true;
         header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?'));
@@ -23,8 +37,7 @@ if (($_POST['_action'] ?? '') === 'login') {
 
 // Handle logout.
 if (isset($_GET['logout'])) {
-    $_SESSION = [];
-    session_destroy();
+    unset($_SESSION['sc_admin']);
     header('Location: index.php');
     exit;
 }
@@ -32,24 +45,23 @@ if (isset($_GET['logout'])) {
 // Gate.
 if (empty($_SESSION['sc_admin'])) {
     $err = $loginError ?? '';
-    ?><!doctype html>
-    <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>SalesCraft Admin</title>
-    <style>
-      body{font-family:Inter,system-ui,Segoe UI,sans-serif;background:#f4f6fb;display:grid;place-items:center;height:100vh;margin:0}
-      form{background:#fff;padding:32px;border-radius:16px;box-shadow:0 8px 24px rgba(16,24,40,.08);width:320px}
-      h1{font-size:18px;margin:0 0 18px}
-      input{width:100%;padding:12px 14px;border:1px solid #e6e9f2;border-radius:10px;font-size:15px;box-sizing:border-box}
-      button{width:100%;margin-top:12px;padding:12px;border:0;border-radius:10px;background:#4f46e5;color:#fff;font-weight:600;font-size:15px;cursor:pointer}
-      .err{color:#ef4444;font-size:13px;margin-top:10px}
-    </style>
-    <form method="post">
-      <h1>SalesCraft — Admin</h1>
-      <input type="password" name="password" placeholder="Admin password" autofocus>
-      <input type="hidden" name="_action" value="login">
-      <button type="submit">Sign in</button>
-      <?php if ($err): ?><div class="err"><?= sc_e($err) ?></div><?php endif; ?>
-    </form>
+    sc_admin_head('Sign in');
+    ?>
+    <div style="min-height:100vh;display:grid;place-items:center">
+      <form method="post" class="card pad" style="width:340px">
+        <div style="margin-bottom:18px"><?= sc_logo_lockup(32) ?></div>
+        <div class="field full">
+          <label>Admin password</label>
+          <input type="password" name="password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autofocus>
+        </div>
+        <input type="hidden" name="_action" value="login">
+        <div class="saverow" style="margin-top:16px">
+          <button type="submit" class="btn primary" style="width:100%;justify-content:center">Sign in</button>
+        </div>
+        <?php if ($err): ?><div class="flash err" style="margin-top:16px;margin-bottom:0"><i data-lucide="alert-triangle"></i><?= sc_e($err) ?></div><?php endif; ?>
+      </form>
+    </div>
     <?php
+    sc_admin_foot();
     exit;
 }

@@ -1,11 +1,12 @@
 -- SalesCraft database schema
--- Import once:  mysql -u USER -p salescraft < sql/schema.sql
+-- Fresh install:  mysql -u USER -p DBNAME < sql/schema.sql
 
 CREATE TABLE IF NOT EXISTS submissions (
     id             INT AUTO_INCREMENT PRIMARY KEY,
     client_name    VARCHAR(150) NOT NULL,
     client_company VARCHAR(150) DEFAULT NULL,
     client_email   VARCHAR(190) DEFAULT NULL,
+    client_phone   VARCHAR(40)  DEFAULT NULL,
     total          INT NOT NULL,
     max_score      INT NOT NULL DEFAULT 200,
     percent        DECIMAL(5,2) NOT NULL,
@@ -18,3 +19,15 @@ CREATE TABLE IF NOT EXISTS submissions (
     INDEX idx_created (created_at),
     INDEX idx_email (client_email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Key/value store for admin-editable settings (brand, SMTP, captcha, password, ...).
+CREATE TABLE IF NOT EXISTS settings (
+    skey  VARCHAR(64) PRIMARY KEY,
+    sval  TEXT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------------
+-- Upgrading an EXISTING install (already had the submissions table)? Run:
+--   ALTER TABLE submissions ADD COLUMN client_phone VARCHAR(40) DEFAULT NULL AFTER client_email;
+--   (then the CREATE TABLE settings above)
+-- ---------------------------------------------------------------------------

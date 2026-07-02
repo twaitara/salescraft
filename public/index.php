@@ -1,15 +1,34 @@
+<?php
+declare(strict_types=1);
+require __DIR__ . '/includes/bootstrap.php';
+require __DIR__ . '/includes/brand.php';
+session_start();
+
+$brand        = sc_setting('brand_name', 'SalesCraft');
+$headline     = sc_setting('intro_headline', 'Where is your sales engine leaking?');
+$captchaMode  = sc_setting('captcha_mode', 'builtin');
+$requirePhone = sc_setting('require_phone', '1') === '1';
+$siteKey      = sc_setting('recaptcha_site_key');
+$captchaQ     = $captchaMode === 'builtin' ? sc_captcha_new() : '';
+?><!doctype html>
+<html lang="en">
+<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>912 Sales Diagnostic Scorecard</title>
+<title><?= sc_e($brand) ?> — Sales Diagnostic Scorecard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest"></script>
+<?php if ($captchaMode === 'recaptcha'): ?>
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>
+<?php endif; ?>
 <style>
 :root{
-  --bg:#f4f6fb; --card:#ffffff; --ink:#0f172a; --muted:#64748b; --line:#e6e9f2;
-  --brand:#4f46e5; --brand-d:#4338ca; --brand-soft:#eef2ff;
+  --bg:#f5f6f8; --card:#ffffff; --ink:#2b3948; --muted:#7c8b99; --line:#e7eaef;
+  --brand:#f5901e; --brand-d:#d9790f; --brand-soft:#fff3e5;
+  --slate:#2b3948; --grey:#7c8b99;
   --s1:#ef4444; --s2:#f97316; --s3:#f59e0b; --s4:#84cc16; --s5:#16a34a;
-  --shadow:0 1px 2px rgba(16,24,40,.04),0 8px 24px rgba(16,24,40,.06);
+  --shadow:0 1px 2px rgba(43,57,72,.05),0 8px 24px rgba(43,57,72,.06);
   --radius:16px;
 }
 *{box-sizing:border-box}
@@ -17,20 +36,21 @@ html,body{margin:0}
 body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink);
   -webkit-font-smoothing:antialiased;line-height:1.5}
 .wrap{max-width:920px;margin:0 auto;padding:28px 20px 80px}
-.brandrow{display:flex;align-items:center;gap:12px;margin-bottom:22px}
-.logo{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--brand),#7c3aed);
-  display:grid;place-items:center;color:#fff;font-weight:800;font-size:17px;letter-spacing:.5px;box-shadow:var(--shadow)}
-.brandrow h1{font-size:19px;margin:0;font-weight:700}
-.brandrow p{margin:0;font-size:13px;color:var(--muted)}
+.brandrow{display:flex;align-items:center;gap:14px;margin-bottom:22px;flex-wrap:wrap}
+.sc-logo{display:inline-flex;align-items:center;gap:11px}
+.sc-word{font-size:20px;font-weight:800;letter-spacing:-.2px;line-height:1}
+.sc-word b{color:var(--slate);font-weight:800}
+.sc-word span{color:var(--grey);font-weight:800}
+.brandrow .tag{color:var(--muted);font-size:13px;padding-left:14px;border-left:1px solid var(--line)}
 
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
 
 /* progress */
 .progress{display:flex;gap:6px;margin:0 0 22px}
-.progress .seg{flex:1;height:7px;border-radius:99px;background:#e7eaf3;overflow:hidden;position:relative}
+.progress .seg{flex:1;height:7px;border-radius:99px;background:#e7eaef;overflow:hidden;position:relative}
 .progress .seg i{position:absolute;inset:0;background:var(--brand);transform:scaleX(0);transform-origin:left;transition:transform .4s ease;border-radius:99px}
 .progress .seg.done i{transform:scaleX(1)}
-.progress .seg.active i{transform:scaleX(1);background:linear-gradient(90deg,var(--brand),#818cf8)}
+.progress .seg.active i{transform:scaleX(1);background:linear-gradient(90deg,var(--brand),#f8b25e)}
 
 /* intro */
 .intro{padding:34px}
@@ -38,10 +58,14 @@ body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;back
 .intro .sub{color:var(--muted);font-size:15px;max-width:620px}
 .fields{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:26px 0 8px}
 .field label{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px}
-.field input{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:11px;font:inherit;font-size:14.5px;background:#fbfcfe}
+.field input{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:11px;font:inherit;font-size:14.5px;background:#fbfcfd;color:var(--ink)}
 .field input:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft)}
+.field.full{grid-column:1/-1}
+.captcha-row{display:flex;gap:10px;align-items:center}
+.captcha-row input{max-width:130px}
+.captcha-row a{font-size:13px;color:var(--brand-d);font-weight:600;text-decoration:none}
 .legend{display:flex;flex-wrap:wrap;gap:10px;margin:22px 0}
-.legend .chip{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);background:#f8fafc;border:1px solid var(--line);padding:7px 11px;border-radius:99px}
+.legend .chip{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);background:#fbfcfd;border:1px solid var(--line);padding:7px 11px;border-radius:99px}
 .dot{width:11px;height:11px;border-radius:50%}
 
 /* section */
@@ -50,7 +74,7 @@ body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;back
 .sec-ico{width:46px;height:46px;border-radius:13px;background:var(--brand-soft);color:var(--brand);display:grid;place-items:center;flex:none}
 .sec-ico svg{width:23px;height:23px}
 .section-head h2{margin:0;font-size:20px}
-.section-head .kicker{font-size:12px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:.6px}
+.section-head .kicker{font-size:12px;font-weight:700;color:var(--brand-d);text-transform:uppercase;letter-spacing:.6px}
 .section-desc{color:var(--muted);font-size:14px;margin:2px 0 20px}
 
 .q{padding:18px 0;border-top:1px solid var(--line)}
@@ -60,15 +84,15 @@ body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;back
 .q-target{font-size:12.5px;color:var(--muted);margin-top:3px}
 .q-target b{color:var(--s5);font-weight:600}
 .scale{display:flex;gap:8px;margin-top:13px}
-.scale button{flex:1;padding:11px 4px;border:1.5px solid var(--line);background:#fbfcfe;border-radius:11px;cursor:pointer;
+.scale button{flex:1;padding:11px 4px;border:1.5px solid var(--line);background:#fbfcfd;border-radius:11px;cursor:pointer;
   font:inherit;font-weight:700;font-size:16px;color:var(--muted);transition:.15s;position:relative}
-.scale button small{display:block;font-size:9.5px;font-weight:600;letter-spacing:.3px;margin-top:2px;color:#94a3b8;text-transform:uppercase}
-.scale button:hover{border-color:#c7cde0;transform:translateY(-1px)}
-.scale button.sel{color:#fff;border-color:transparent;box-shadow:0 6px 16px rgba(79,70,229,.25)}
+.scale button small{display:block;font-size:9.5px;font-weight:600;letter-spacing:.3px;margin-top:2px;color:#a5b1bc;text-transform:uppercase}
+.scale button:hover{border-color:#cdd4dc;transform:translateY(-1px)}
+.scale button.sel{color:#fff;border-color:transparent;box-shadow:0 6px 16px rgba(245,144,30,.28)}
 .scale button.sel[data-v="1"]{background:var(--s1)} .scale button.sel[data-v="2"]{background:var(--s2)}
 .scale button.sel[data-v="3"]{background:var(--s3)} .scale button.sel[data-v="4"]{background:var(--s4)}
 .scale button.sel[data-v="5"]{background:var(--s5)}
-.anchor{margin-top:11px;font-size:13px;background:#f8fafc;border:1px solid var(--line);border-left:3px solid var(--brand);
+.anchor{margin-top:11px;font-size:13px;background:#fbfcfd;border:1px solid var(--line);border-left:3px solid var(--brand);
   padding:10px 13px;border-radius:9px;display:none}
 .anchor.show{display:block;animation:fade .25s ease}
 .anchor b{color:var(--ink)}
@@ -86,11 +110,11 @@ body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;back
 .nav{display:flex;justify-content:space-between;gap:12px;margin-top:26px}
 .btn{padding:13px 22px;border-radius:12px;font:inherit;font-weight:600;font-size:14.5px;cursor:pointer;border:1px solid var(--line);
   background:#fff;color:var(--ink);display:inline-flex;align-items:center;gap:8px;transition:.15s}
-.btn:hover{background:#f8fafc}
+.btn:hover{background:#f5f6f8}
 .btn svg{width:17px;height:17px}
 .btn.primary{background:var(--brand);color:#fff;border-color:var(--brand)}
 .btn.primary:hover{background:var(--brand-d)}
-.btn.primary:disabled{background:#c7cde0;border-color:#c7cde0;cursor:not-allowed;box-shadow:none}
+.btn.primary:disabled{background:#f0c79a;border-color:#f0c79a;cursor:not-allowed;box-shadow:none}
 .btn.ghost{border-color:transparent;background:transparent;color:var(--muted)}
 
 /* results */
@@ -115,7 +139,7 @@ body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;back
 .catbar .lab{display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px}
 .catbar .lab b{font-weight:600}
 .catbar .lab span{color:var(--muted);font-variant-numeric:tabular-nums}
-.track{height:9px;background:#eef1f7;border-radius:99px;overflow:hidden}
+.track{height:9px;background:#eef1f5;border-radius:99px;overflow:hidden}
 .track i{display:block;height:100%;border-radius:99px;transition:width .8s cubic-bezier(.2,.8,.2,1)}
 
 .fix{display:flex;gap:12px;padding:13px 0;border-top:1px solid var(--line)}
@@ -131,8 +155,8 @@ svg.radar{max-width:460px;width:100%;height:auto}
 .small{font-size:12px;color:var(--muted);text-align:center;margin-top:22px}
 .submitbar{display:flex;align-items:center;gap:12px;margin-top:22px;padding:14px 18px;border-radius:13px;font-size:14px;border:1px solid var(--line)}
 .submitbar svg{width:20px;height:20px;flex:none}
-.submitbar a{color:var(--brand);font-weight:600}
-.submitbar.idle{background:var(--brand-soft);color:var(--brand-d);border-color:#dce0fb}
+.submitbar a{color:var(--brand-d);font-weight:600}
+.submitbar.idle{background:var(--brand-soft);color:var(--brand-d);border-color:#f6d9b4}
 .submitbar.sending{background:#fffbeb;color:#92400e;border-color:#fde68a}
 .submitbar.sending svg{animation:spin 1s linear infinite}
 .submitbar.ok{background:#f0fdf4;color:#166534;border-color:#bbf7d0}
@@ -145,16 +169,14 @@ svg.radar{max-width:460px;width:100%;height:auto}
   .section,.intro,.results{padding:22px 18px}
   .gauge-wrap{flex-direction:column}
 }
-@media print{.nav,.actions,.progress,.brandrow p{display:none}body{background:#fff}}
+@media print{.nav,.actions,.progress,.brandrow .tag{display:none}body{background:#fff}}
 </style>
-
+</head>
+<body>
 <div class="wrap">
   <div class="brandrow">
-    <div class="logo">912</div>
-    <div>
-      <h1>Sales Diagnostic Scorecard</h1>
-      <p>Score each area honestly — you'll get a live diagnosis after every section.</p>
-    </div>
+    <?= sc_logo_lockup(40) ?>
+    <span class="tag">Sales Diagnostic Scorecard</span>
   </div>
 
   <div class="progress" id="progress"></div>
@@ -162,9 +184,18 @@ svg.radar{max-width:460px;width:100%;height:auto}
 </div>
 
 <script>
+window.SC = {
+  brand: <?= json_encode($brand) ?>,
+  headline: <?= json_encode($headline) ?>,
+  requirePhone: <?= $requirePhone ? 'true' : 'false' ?>,
+  captchaMode: <?= json_encode($captchaMode) ?>,
+  captchaQuestion: <?= json_encode($captchaQ) ?>,
+  recaptchaSiteKey: <?= json_encode($siteKey) ?>
+};
+</script>
+<script>
 /* ============================================================
    DATA — 10 categories × 4 criteria, each with 1/3/5 anchors.
-   "a1"=what a 1 looks like, "a3"=a 3, "a5"=what a 5 looks like.
    ============================================================ */
 const SECTIONS = [
  {cat:"Sales Strategy", icon:"target", desc:"Do you have a clear, deliberate plan for who you sell to and how you hit your numbers?",
@@ -239,7 +270,6 @@ const SECTIONS = [
   ]},
 ];
 
-/* Recommended first action for each weak category */
 const FIX = {
  "Sales Strategy":"Write a one-page ICP and cascade a revenue target down to monthly numbers per rep.",
  "Sales Process":"Map your deal stages with entry/exit criteria and assign an owner to each.",
@@ -257,14 +287,15 @@ const SCOLORS=['','var(--s1)','var(--s2)','var(--s3)','var(--s4)','var(--s5)'];
 const MAX = SECTIONS.length*4*5; // 200
 
 /* ---------- state ---------- */
-let state = JSON.parse(localStorage.getItem('scorecard912')||'{}');
-state.answers = state.answers||{};      // key "s-q" -> 1..5
-state.meta = state.meta||{name:'',company:''};
-let step = state.step||0;                // 0=intro, 1..10 sections, 11=results
-const save=()=>localStorage.setItem('scorecard912',JSON.stringify({...state,step}));
+let state = JSON.parse(localStorage.getItem('salescraft')||'{}');
+state.answers = state.answers||{};
+state.meta = state.meta||{name:'',email:'',phone:'',company:''};
+let step = state.step||0;
+const save=()=>localStorage.setItem('salescraft',JSON.stringify({...state,step}));
 
 const app=document.getElementById('app');
 const prog=document.getElementById('progress');
+let recaptchaId=null;
 
 function renderProgress(){
   prog.innerHTML='';
@@ -289,42 +320,94 @@ function bandFor(pct){
   return {t:"Critical",c:"var(--s1)",msg:"High risk — this is likely leaking revenue right now."};
 }
 
-/* ---------- intro ---------- */
+/* ---------- intro / lead gate ---------- */
+function captchaField(){
+  if(SC.captchaMode==='builtin'){
+    return `<div class="field full">
+      <label id="cap-label">Quick check — what is ${SC.captchaQuestion}? *</label>
+      <div class="captcha-row">
+        <input id="f-captcha" inputmode="numeric" autocomplete="off" placeholder="?">
+        <a href="#" onclick="refreshCaptcha();return false;">New question</a>
+      </div></div>`;
+  }
+  if(SC.captchaMode==='recaptcha'){
+    return `<div class="field full"><div id="recaptcha-box"></div></div>`;
+  }
+  return '';
+}
 function renderIntro(){
+  recaptchaId=null;
   app.innerHTML=`<div class="card intro">
-    <h2>Where is your sales engine leaking?</h2>
+    <h2>${esc(SC.headline)}</h2>
     <p class="sub">Score your business across <b>10 areas</b> and <b>40 questions</b>. After each section you'll get an instant score and diagnosis, then a full breakdown with your priority fixes. Takes about 6 minutes.</p>
     <div class="fields">
-      <div class="field"><label>Your name *</label><input id="f-name" placeholder="Jane Doe" value="${state.meta.name||''}"></div>
-      <div class="field"><label>Work email *</label><input id="f-email" type="email" placeholder="jane@acme.com" value="${state.meta.email||''}"></div>
-      <div class="field" style="grid-column:1/-1"><label>Company</label><input id="f-co" placeholder="Acme Ltd" value="${state.meta.company||''}"></div>
+      <div class="field"><label>Your name *</label><input id="f-name" placeholder="Jane Doe" value="${esc(state.meta.name||'')}"></div>
+      <div class="field"><label>Work email *</label><input id="f-email" type="email" placeholder="jane@acme.com" value="${esc(state.meta.email||'')}"></div>
+      ${SC.requirePhone?`<div class="field"><label>Phone *</label><input id="f-phone" type="tel" placeholder="+254 7xx xxx xxx" value="${esc(state.meta.phone||'')}"></div>`:''}
+      <div class="field ${SC.requirePhone?'':'full'}"><label>Company</label><input id="f-co" placeholder="Acme Ltd" value="${esc(state.meta.company||'')}"></div>
     </div>
-    <div id="intro-err" style="color:var(--s1);font-size:13px;margin-top:8px;display:none"></div>
+    ${captchaField()}
+    <div id="intro-err" style="color:var(--s1);font-size:13px;margin-top:10px;display:none"></div>
     <div class="legend">
       <span class="chip"><span class="dot" style="background:var(--s1)"></span>1 · Not in place</span>
       <span class="chip"><span class="dot" style="background:var(--s3)"></span>3 · Partly / inconsistent</span>
       <span class="chip"><span class="dot" style="background:var(--s5)"></span>5 · Best practice</span>
     </div>
     <div class="nav" style="justify-content:flex-end">
-      <button class="btn primary" onclick="startForm()">Start diagnostic <i data-lucide="arrow-right"></i></button>
+      <button class="btn primary" id="startbtn" onclick="startForm()">Start diagnostic <i data-lucide="arrow-right"></i></button>
     </div>
   </div>`;
   lucide.createIcons();
+  if(SC.captchaMode==='recaptcha') tryRenderRecaptcha();
 }
-function startForm(){
-  const name=document.getElementById('f-name').value.trim();
-  const email=document.getElementById('f-email').value.trim();
-  const err=document.getElementById('intro-err');
-  const emailOk=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  if(!name||!emailOk){
-    err.textContent = !name ? 'Please enter your name.' : 'Please enter a valid work email.';
-    err.style.display='block'; return;
+function tryRenderRecaptcha(){
+  const box=document.getElementById('recaptcha-box'); if(!box) return;
+  if(window.grecaptcha && grecaptcha.render){
+    try{ recaptchaId=grecaptcha.render(box,{sitekey:SC.recaptchaSiteKey}); }catch(e){}
+  }else{ setTimeout(tryRenderRecaptcha,300); }
+}
+async function refreshCaptcha(){
+  try{
+    const d=await (await fetch('captcha.php')).json();
+    SC.captchaQuestion=d.question;
+    const lab=document.getElementById('cap-label'); if(lab) lab.textContent='Quick check — what is '+d.question+'? *';
+    const inp=document.getElementById('f-captcha'); if(inp) inp.value='';
+  }catch(e){}
+}
+function introErr(m){const e=document.getElementById('intro-err');e.textContent=m;e.style.display='block';}
+function val(id){const el=document.getElementById(id);return el?el.value.trim():'';}
+
+async function startForm(){
+  const name=val('f-name'), email=val('f-email'), company=val('f-co');
+  const phone=SC.requirePhone?val('f-phone'):'';
+  if(!name) return introErr('Please enter your name.');
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return introErr('Please enter a valid email.');
+  if(SC.requirePhone && phone.replace(/\D/g,'').length<7) return introErr('Please enter a valid phone number.');
+
+  const payload={name,email,phone,company};
+  if(SC.captchaMode==='builtin'){
+    payload.captcha=val('f-captcha');
+    if(!payload.captcha) return introErr('Please answer the quick check.');
+  }else if(SC.captchaMode==='recaptcha'){
+    payload.recaptcha=(window.grecaptcha && recaptchaId!==null)?grecaptcha.getResponse(recaptchaId):'';
+    if(!payload.recaptcha) return introErr('Please complete the "I\'m not a robot" check.');
   }
-  state.meta.name=name;
-  state.meta.email=email;
-  state.meta.company=document.getElementById('f-co').value.trim();
-  state.submitted=false;              // fresh run → allow one submission
-  step=1; save(); render();
+
+  const btn=document.getElementById('startbtn'); btn.disabled=true;
+  try{
+    const data=await (await fetch('gate.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})).json();
+    if(!data.ok){
+      if(data.captcha){ SC.captchaQuestion=data.captcha;
+        const lab=document.getElementById('cap-label'); if(lab) lab.textContent='Quick check — what is '+data.captcha+'? *';
+        const inp=document.getElementById('f-captcha'); if(inp) inp.value='';
+      }
+      if(SC.captchaMode==='recaptcha' && window.grecaptcha && recaptchaId!==null) grecaptcha.reset(recaptchaId);
+      btn.disabled=false;
+      return introErr(data.error||'Please check your details.');
+    }
+    state.meta={name,email,phone,company};
+    state.submitted=false; step=1; save(); render();
+  }catch(e){ btn.disabled=false; introErr('Network error — please try again.'); }
 }
 
 /* ---------- section ---------- */
@@ -416,7 +499,7 @@ function renderResults(){
       <div class="gauge">${R}<div class="num"><b>${total}</b><span>out of ${MAX}</span></div></div>
       <div class="verdict">
         <span class="badge" style="background:${verdict.c}">${Math.round(pct*100)}% · ${verdict.t}</span>
-        <h2>${state.meta.company?state.meta.company+"'s":"Your"} sales engine</h2>
+        <h2>${state.meta.company?esc(state.meta.company)+"'s":"Your"} sales engine</h2>
         <p>${verdict.p}</p>
       </div>
     </div>
@@ -447,15 +530,12 @@ function renderResults(){
       <button class="btn" onclick="window.print()"><i data-lucide="printer"></i> Print / Save PDF</button>
       <button class="btn primary" onclick="resetAll()"><i data-lucide="rotate-ccw"></i> Start over</button>
     </div>
-    <p class="small">${state.meta.name?state.meta.name+" · ":""}${state.meta.company||""} — 912 Sales Diagnostic.</p>
+    <p class="small">${state.meta.name?esc(state.meta.name)+" · ":""}${esc(state.meta.company||"")} — ${esc(SC.brand)} Sales Diagnostic.</p>
   </div>`;
   lucide.createIcons();
-  window.__submitPayload={
-    client_name:state.meta.name||'', client_company:state.meta.company||'',
-    client_email:state.meta.email||'', answers:state.answers
-  };
+  window.__submitPayload={ answers:state.answers };
   updateSubmitBar();
-  if(!state.submitted) submitResults();   // auto-send once when results first appear
+  if(!state.submitted) submitResults();
 }
 
 /* ---------- send results to the consultant ---------- */
@@ -490,7 +570,7 @@ async function submitResults(){
 function circ(pct,color){
   const r=88,c=2*Math.PI*r,off=c*(1-pct);
   return `<svg width="200" height="200" viewBox="0 0 200 200">
-    <circle cx="100" cy="100" r="${r}" fill="none" stroke="#eef1f7" stroke-width="16"/>
+    <circle cx="100" cy="100" r="${r}" fill="none" stroke="#eef1f5" stroke-width="16"/>
     <circle cx="100" cy="100" r="${r}" fill="none" stroke="${color}" stroke-width="16" stroke-linecap="round"
       stroke-dasharray="${c}" stroke-dashoffset="${c}" transform="rotate(-90 100 100)">
       <animate attributeName="stroke-dashoffset" from="${c}" to="${off}" dur="1s" fill="freeze" calcMode="spline" keySplines="0.2 0.8 0.2 1" keyTimes="0;1"/>
@@ -502,27 +582,29 @@ function radar(cats){
   const pt=(i,rad)=>{const a=-Math.PI/2+i*2*Math.PI/n;return[cx+rad*Math.cos(a),cy+rad*Math.sin(a)];};
   let rings='';
   [0.25,0.5,0.75,1].forEach(f=>{
-    rings+=`<polygon points="${cats.map((_,i)=>pt(i,R*f).join(',')).join(' ')}" fill="none" stroke="#e6e9f2" stroke-width="1"/>`;
+    rings+=`<polygon points="${cats.map((_,i)=>pt(i,R*f).join(',')).join(' ')}" fill="none" stroke="#e7eaef" stroke-width="1"/>`;
   });
   let axes='',labels='';
   cats.forEach((c,i)=>{
-    const[x,y]=pt(i,R); axes+=`<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="#e6e9f2"/>`;
+    const[x,y]=pt(i,R); axes+=`<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="#e7eaef"/>`;
     const[lx,ly]=pt(i,R+24);
     const anchor=Math.abs(lx-cx)<8?'middle':(lx>cx?'start':'end');
-    labels+=`<text x="${lx}" y="${ly}" font-size="11" fill="#64748b" text-anchor="${anchor}" dominant-baseline="middle" font-weight="600">${c.name}</text>`;
+    labels+=`<text x="${lx}" y="${ly}" font-size="11" fill="#7c8b99" text-anchor="${anchor}" dominant-baseline="middle" font-weight="600">${c.name}</text>`;
   });
   const poly=cats.map((c,i)=>pt(i,R*(c.score/20)).join(',')).join(' ');
   return `<svg class="radar" viewBox="0 0 460 380">${rings}${axes}
-    <polygon points="${poly}" fill="rgba(79,70,229,.18)" stroke="var(--brand)" stroke-width="2" stroke-linejoin="round"/>
+    <polygon points="${poly}" fill="rgba(245,144,30,.18)" stroke="var(--brand)" stroke-width="2" stroke-linejoin="round"/>
     ${cats.map((c,i)=>{const[x,y]=pt(i,R*(c.score/20));return `<circle cx="${x}" cy="${y}" r="3.5" fill="var(--brand)"/>`;}).join('')}
     ${labels}</svg>`;
 }
 
 function resetAll(){
   if(!confirm('Clear all answers and start over?'))return;
-  localStorage.removeItem('scorecard912');
-  state={answers:{},meta:{name:'',company:''}}; step=0; render();
+  localStorage.removeItem('salescraft');
+  state={answers:{},meta:{name:'',email:'',phone:'',company:''}}; step=0; render();
 }
+
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
 
 /* ---------- router ---------- */
 function render(){
@@ -533,3 +615,5 @@ function render(){
 }
 render();
 </script>
+</body>
+</html>

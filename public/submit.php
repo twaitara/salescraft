@@ -1,12 +1,14 @@
 <?php
 /**
  * Receives a completed scorecard (JSON POST), stores it, and emails the consultant.
- * Scores are recomputed server-side from the raw answers so totals can't be spoofed.
+ * Requires a verified gate session (see gate.php) so only captcha-passed humans
+ * can submit. Scores are recomputed server-side so totals can't be spoofed.
  */
 declare(strict_types=1);
 
 require __DIR__ . '/includes/bootstrap.php';
 require __DIR__ . '/includes/mailer.php';
+session_start();
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -21,23 +23,25 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     fail(405, 'Method not allowed');
 }
 
+// Must have passed the lead gate (name/email/phone/captcha) in this session.
+$gate = $_SESSION['sc_gate'] ?? null;
+if (!is_array($gate) || (time() - (int) ($gate['ts'] ?? 0)) > 10800) { // 3 hours
+    fail(403, 'Your session expired. Please refresh the page and start again.');
+}
+
 $raw  = file_get_contents('php://input');
 $data = json_decode($raw, true);
 if (!is_array($data)) {
     fail(400, 'Invalid payload');
 }
 
-$name    = trim((string) ($data['client_name'] ?? ''));
-$company = trim((string) ($data['client_company'] ?? ''));
-$email   = trim((string) ($data['client_email'] ?? ''));
+// Lead identity comes from the verified gate, not the client payload.
+$name    = (string) $gate['name'];
+$company = (string) ($gate['company'] ?? '');
+$email   = (string) ($gate['email'] ?? '');
+$phone   = (string) ($gate['phone'] ?? '');
 $answers = $data['answers'] ?? null;
 
-if ($name === '') {
-    fail(422, 'Client name is required');
-}
-if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-    fail(422, 'Invalid email address');
-}
 if (!is_array($answers)) {
     fail(422, 'Missing answers');
 }
@@ -83,13 +87,14 @@ foreach ($answers as $k => $v) {
 try {
     $stmt = sc_db()->prepare(
         'INSERT INTO submissions
-            (client_name, client_company, client_email, total, max_score, percent, band, categories, answers, ip, user_agent)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?)'
+            (client_name, client_company, client_email, client_phone, total, max_score, percent, band, categories, answers, ip, user_agent)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?)'
     );
     $stmt->execute([
         $name,
         $company !== '' ? $company : null,
         $email !== '' ? $email : null,
+        $phone !== '' ? $phone : null,
         $total,
         SC_MAX,
         $percent,
@@ -105,11 +110,12 @@ try {
 }
 
 // Notify the consultant. A mail failure must not lose the saved submission.
-$mail = sc_send_notification($CONFIG, [
+$mail = sc_send_notification(sc_mail_config(), [
     'id'             => $id,
     'client_name'    => $name,
     'client_company' => $company,
     'client_email'   => $email,
+    'client_phone'   => $phone,
     'total'          => $total,
     'percent'        => $percent,
     'band'           => $band,
