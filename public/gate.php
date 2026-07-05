@@ -54,6 +54,18 @@ $_SESSION['sc_gate'] = [
     'ts'      => time(),
 ];
 
+// Record the lead as soon as they clear the gate, so the admin sees people who
+// started even if they never finish. Keeps any existing answers/step (resume).
+try {
+    $meta = json_encode(['name' => $name, 'company' => $company, 'phone' => $phone, 'email' => $email]);
+    sc_db()->prepare(
+        'INSERT INTO progress (email, answers, step, meta) VALUES (?, "{}", 1, ?)
+         ON DUPLICATE KEY UPDATE meta = VALUES(meta)'
+    )->execute([$email, $meta]);
+} catch (Throwable $e) {
+    // progress table may not exist yet — non-fatal
+}
+
 // Offer to resume if this email has saved progress (safe: only after captcha).
 $progress = null;
 try {

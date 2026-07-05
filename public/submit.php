@@ -122,6 +122,13 @@ try {
     fail(500, 'Could not save submission');
 }
 
+// They finished — drop them from the in-progress list.
+try {
+    if ($email !== '') sc_db()->prepare('DELETE FROM progress WHERE email = ?')->execute([$email]);
+} catch (Throwable $e) {
+    // non-fatal
+}
+
 // Build the completed scorecard PDF (attached to the notification email).
 $subForMail = [
     'id'             => $id,
