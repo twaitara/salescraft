@@ -8,3 +8,5 @@ deployment:
     - export DEPLOYPATH=$HOME/nineonetwo.online/salescraft
     - /bin/mkdir -p $DEPLOYPATH
     - /bin/cp -R public/. $DEPLOYPATH/
+    # Remove the legacy static page so the server serves index.php, not the old index.html
+    - /bin/rm -f $DEPLOYPATH/index.html
