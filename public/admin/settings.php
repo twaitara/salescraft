@@ -1,6 +1,7 @@
 <?php
 require __DIR__ . '/auth.php';
 require __DIR__ . '/../includes/mailer.php';
+require __DIR__ . '/../includes/pdf.php';
 
 $flash = '';
 $flashType = 'ok';
@@ -39,16 +40,31 @@ if (($_POST['_action'] ?? '') === 'save') {
     exit;
 }
 
-/* ---- Send a test email using the SAVED settings ---- */
+/* ---- Send a test email (to any address you type) using the SAVED settings ---- */
 if (($_POST['_action'] ?? '') === 'test') {
-    $res = sc_send_notification(sc_mail_config(), [
-        'id' => 0, 'client_name' => 'Test Client', 'client_company' => 'Preview Co',
-        'client_email' => 'test@example.com', 'client_phone' => '+000 000 0000',
-        'total' => 128, 'percent' => 64, 'band' => 'Needs Structure',
-        'categories' => array_map(fn($n) => ['name' => $n, 'score' => 13], SC_CATEGORIES),
-    ]);
-    if ($res['ok']) { $flash = 'Test email sent to ' . sc_setting('consultant_email') . '.'; }
-    else { $flash = 'Test email failed: ' . $res['error']; $flashType = 'err'; }
+    $to = trim((string) ($_POST['test_email'] ?? ''));
+    if ($to !== '' && !filter_var($to, FILTER_VALIDATE_EMAIL)) {
+        $flash = 'That test address is not a valid email.'; $flashType = 'err';
+    } else {
+        $sample = [
+            'id' => 0, 'client_name' => 'Test Client', 'client_company' => 'Preview Co',
+            'client_email' => 'test@example.com', 'client_phone' => '+000 000 0000',
+            'total' => 128, 'percent' => 64, 'band' => 'Needs Structure',
+            'categories' => array_map(fn($n) => ['name' => $n, 'score' => 13], SC_CATEGORIES),
+        ];
+        $answers = [];
+        for ($si = 0; $si < count(SC_CATEGORIES); $si++) {
+            for ($qi = 0; $qi < SC_QUESTIONS_PER_CAT; $qi++) $answers["$si-$qi"] = (($si + $qi) % 5) + 1;
+        }
+        $pdf = null;
+        try { $pdf = sc_build_pdf($sample + ['answers' => $answers, 'brand' => sc_setting('brand_name', 'SalesCraft'), 'date' => date('j M Y')]); }
+        catch (Throwable $e) { $pdf = null; }
+
+        $dest = $to !== '' ? $to : sc_setting('consultant_email');
+        $res  = sc_send_notification(sc_mail_config(), $sample, $pdf, $to !== '' ? $to : null);
+        if ($res['ok']) { $flash = 'Test email (with sample PDF) sent to ' . $dest . '.'; }
+        else { $flash = 'Test email failed: ' . $res['error']; $flashType = 'err'; }
+    }
 }
 
 if (isset($_GET['saved'])) { $flash = 'Settings saved.'; }
@@ -160,8 +176,10 @@ sc_admin_topbar('settings');
       <div class="field full"><input readonly value="<?= sc_e($scorecardUrl) ?>" onclick="this.select()"></div>
       <form method="post" style="margin-top:14px">
         <input type="hidden" name="_action" value="test">
-        <button type="submit" class="btn"><i data-lucide="mail-check"></i> Send test email to myself</button>
-        <span class="hint" style="margin-left:8px">Save your SMTP settings first.</span>
+        <div class="frow" style="align-items:end">
+          <div class="field"><label>Send a test to</label><input type="email" name="test_email" placeholder="<?= sc_e(sc_setting('consultant_email') ?: 'you@example.com') ?>"><div class="hint">Leave blank to send to your notification email.</div></div>
+          <div class="field"><button type="submit" class="btn"><i data-lucide="mail-check"></i> Send test email (with sample PDF)</button><div class="hint" style="margin-top:8px">Save your SMTP settings first.</div></div>
+        </div>
       </form>
     </div>
   </div>

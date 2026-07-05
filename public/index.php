@@ -22,14 +22,22 @@ $captchaQ     = $captchaMode === 'builtin' ? sc_captcha_new() : '';
 <?php if ($captchaMode === 'recaptcha'): ?>
 <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 <?php endif; ?>
+<script>(function(){try{var t=localStorage.getItem("sc-theme")||"dark";document.documentElement.setAttribute("data-theme",t);}catch(e){document.documentElement.setAttribute("data-theme","dark");}})();</script>
 <style>
 :root{
   --bg:#f5f6f8; --card:#ffffff; --ink:#2b3948; --muted:#7c8b99; --line:#e7eaef;
   --brand:#f5901e; --brand-d:#d9790f; --brand-soft:#fff3e5;
   --slate:#2b3948; --grey:#7c8b99;
+  --surface:#fbfcfd; --surface2:#f3f5f7;
   --s1:#ef4444; --s2:#f97316; --s3:#f59e0b; --s4:#84cc16; --s5:#16a34a;
   --shadow:0 1px 2px rgba(43,57,72,.05),0 8px 24px rgba(43,57,72,.06);
   --radius:16px;
+}
+:root[data-theme="dark"]{
+  --bg:#0e141b; --card:#18212b; --ink:#e8edf2; --muted:#96a3b1; --line:#27313d;
+  --brand-soft:#3a2a12; --slate:#e8edf2; --grey:#96a3b1;
+  --surface:#121a23; --surface2:#1f2833;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);
 }
 *{box-sizing:border-box}
 html,body{margin:0}
@@ -42,6 +50,10 @@ body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;back
 .sc-word b{color:var(--slate);font-weight:800}
 .sc-word span{color:var(--grey);font-weight:800}
 .brandrow .tag{color:var(--muted);font-size:13px;padding-left:14px;border-left:1px solid var(--line)}
+.theme-toggle{margin-left:auto;background:transparent;border:1px solid var(--line);color:var(--muted);width:40px;height:40px;
+  border-radius:11px;cursor:pointer;display:grid;place-items:center}
+.theme-toggle:hover{color:var(--ink);background:var(--surface2)}
+.theme-toggle svg{width:19px;height:19px}
 
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
 
@@ -58,14 +70,14 @@ body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;back
 .intro .sub{color:var(--muted);font-size:15px;max-width:620px}
 .fields{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:26px 0 8px}
 .field label{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px}
-.field input{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:11px;font:inherit;font-size:14.5px;background:#fbfcfd;color:var(--ink)}
+.field input{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:11px;font:inherit;font-size:14.5px;background:var(--surface);color:var(--ink)}
 .field input:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft)}
 .field.full{grid-column:1/-1}
 .captcha-row{display:flex;gap:10px;align-items:center}
 .captcha-row input{max-width:130px}
 .captcha-row a{font-size:13px;color:var(--brand-d);font-weight:600;text-decoration:none}
 .legend{display:flex;flex-wrap:wrap;gap:10px;margin:22px 0}
-.legend .chip{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);background:#fbfcfd;border:1px solid var(--line);padding:7px 11px;border-radius:99px}
+.legend .chip{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);background:var(--surface);border:1px solid var(--line);padding:7px 11px;border-radius:99px}
 .dot{width:11px;height:11px;border-radius:50%}
 
 /* section */
@@ -84,7 +96,7 @@ body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;back
 .q-target{font-size:12.5px;color:var(--muted);margin-top:3px}
 .q-target b{color:var(--s5);font-weight:600}
 .scale{display:flex;gap:8px;margin-top:13px}
-.scale button{flex:1;padding:11px 4px;border:1.5px solid var(--line);background:#fbfcfd;border-radius:11px;cursor:pointer;
+.scale button{flex:1;padding:11px 4px;border:1.5px solid var(--line);background:var(--surface);border-radius:11px;cursor:pointer;
   font:inherit;font-weight:700;font-size:16px;color:var(--muted);transition:.15s;position:relative}
 .scale button small{display:block;font-size:9.5px;font-weight:600;letter-spacing:.3px;margin-top:2px;color:#a5b1bc;text-transform:uppercase}
 .scale button:hover{border-color:#cdd4dc;transform:translateY(-1px)}
@@ -92,7 +104,7 @@ body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;back
 .scale button.sel[data-v="1"]{background:var(--s1)} .scale button.sel[data-v="2"]{background:var(--s2)}
 .scale button.sel[data-v="3"]{background:var(--s3)} .scale button.sel[data-v="4"]{background:var(--s4)}
 .scale button.sel[data-v="5"]{background:var(--s5)}
-.anchor{margin-top:11px;font-size:13px;background:#fbfcfd;border:1px solid var(--line);border-left:3px solid var(--brand);
+.anchor{margin-top:11px;font-size:13px;background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--brand);
   padding:10px 13px;border-radius:9px;display:none}
 .anchor.show{display:block;animation:fade .25s ease}
 .anchor b{color:var(--ink)}
@@ -109,8 +121,8 @@ body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;back
 /* nav */
 .nav{display:flex;justify-content:space-between;gap:12px;margin-top:26px}
 .btn{padding:13px 22px;border-radius:12px;font:inherit;font-weight:600;font-size:14.5px;cursor:pointer;border:1px solid var(--line);
-  background:#fff;color:var(--ink);display:inline-flex;align-items:center;gap:8px;transition:.15s}
-.btn:hover{background:#f5f6f8}
+  background:var(--card);color:var(--ink);display:inline-flex;align-items:center;gap:8px;transition:.15s}
+.btn:hover{background:var(--surface2)}
 .btn svg{width:17px;height:17px}
 .btn.primary{background:var(--brand);color:#fff;border-color:var(--brand)}
 .btn.primary:hover{background:var(--brand-d)}
@@ -139,7 +151,7 @@ body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;back
 .catbar .lab{display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px}
 .catbar .lab b{font-weight:600}
 .catbar .lab span{color:var(--muted);font-variant-numeric:tabular-nums}
-.track{height:9px;background:#eef1f5;border-radius:99px;overflow:hidden}
+.track{height:9px;background:var(--surface2);border-radius:99px;overflow:hidden}
 .track i{display:block;height:100%;border-radius:99px;transition:width .8s cubic-bezier(.2,.8,.2,1)}
 
 .fix{display:flex;gap:12px;padding:13px 0;border-top:1px solid var(--line)}
@@ -157,10 +169,10 @@ svg.radar{max-width:460px;width:100%;height:auto}
 .submitbar svg{width:20px;height:20px;flex:none}
 .submitbar a{color:var(--brand-d);font-weight:600}
 .submitbar.idle{background:var(--brand-soft);color:var(--brand-d);border-color:#f6d9b4}
-.submitbar.sending{background:#fffbeb;color:#92400e;border-color:#fde68a}
+.submitbar.sending{background:rgba(245,158,11,.14);color:#d9790f;border-color:rgba(245,158,11,.3)}
 .submitbar.sending svg{animation:spin 1s linear infinite}
-.submitbar.ok{background:#f0fdf4;color:#166534;border-color:#bbf7d0}
-.submitbar.error{background:#fef2f2;color:#991b1b;border-color:#fecaca}
+.submitbar.ok{background:rgba(22,163,74,.14);color:#22c55e;border-color:rgba(22,163,74,.3)}
+.submitbar.error{background:rgba(239,68,68,.14);color:#f87171;border-color:rgba(239,68,68,.3)}
 @keyframes spin{to{transform:rotate(360deg)}}
 
 @media(max-width:680px){
@@ -177,6 +189,7 @@ svg.radar{max-width:460px;width:100%;height:auto}
   <div class="brandrow">
     <?= sc_logo_lockup(40) ?>
     <span class="tag">Sales Diagnostic Scorecard</span>
+    <button class="theme-toggle" onclick="scToggleTheme()" title="Toggle light / dark"><i data-lucide="moon"></i></button>
   </div>
 
   <div class="progress" id="progress"></div>
@@ -569,9 +582,10 @@ async function submitResults(){
 /* circular gauge */
 function circ(pct,color){
   const r=88,c=2*Math.PI*r,off=c*(1-pct);
+  const track=cssVar('--surface2')||'#eef1f5', arc=resolveColor(color);
   return `<svg width="200" height="200" viewBox="0 0 200 200">
-    <circle cx="100" cy="100" r="${r}" fill="none" stroke="#eef1f5" stroke-width="16"/>
-    <circle cx="100" cy="100" r="${r}" fill="none" stroke="${color}" stroke-width="16" stroke-linecap="round"
+    <circle cx="100" cy="100" r="${r}" fill="none" stroke="${track}" stroke-width="16"/>
+    <circle cx="100" cy="100" r="${r}" fill="none" stroke="${arc}" stroke-width="16" stroke-linecap="round"
       stroke-dasharray="${c}" stroke-dashoffset="${c}" transform="rotate(-90 100 100)">
       <animate attributeName="stroke-dashoffset" from="${c}" to="${off}" dur="1s" fill="freeze" calcMode="spline" keySplines="0.2 0.8 0.2 1" keyTimes="0;1"/>
     </circle></svg>`;
@@ -579,22 +593,23 @@ function circ(pct,color){
 /* radar chart */
 function radar(cats){
   const n=cats.length,cx=230,cy=190,R=150;
+  const line=cssVar('--line')||'#e7eaef', muted=cssVar('--muted')||'#7c8b99', brandCol=cssVar('--brand')||'#f5901e';
   const pt=(i,rad)=>{const a=-Math.PI/2+i*2*Math.PI/n;return[cx+rad*Math.cos(a),cy+rad*Math.sin(a)];};
   let rings='';
   [0.25,0.5,0.75,1].forEach(f=>{
-    rings+=`<polygon points="${cats.map((_,i)=>pt(i,R*f).join(',')).join(' ')}" fill="none" stroke="#e7eaef" stroke-width="1"/>`;
+    rings+=`<polygon points="${cats.map((_,i)=>pt(i,R*f).join(',')).join(' ')}" fill="none" stroke="${line}" stroke-width="1"/>`;
   });
   let axes='',labels='';
   cats.forEach((c,i)=>{
-    const[x,y]=pt(i,R); axes+=`<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="#e7eaef"/>`;
+    const[x,y]=pt(i,R); axes+=`<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="${line}"/>`;
     const[lx,ly]=pt(i,R+24);
     const anchor=Math.abs(lx-cx)<8?'middle':(lx>cx?'start':'end');
-    labels+=`<text x="${lx}" y="${ly}" font-size="11" fill="#7c8b99" text-anchor="${anchor}" dominant-baseline="middle" font-weight="600">${c.name}</text>`;
+    labels+=`<text x="${lx}" y="${ly}" font-size="11" fill="${muted}" text-anchor="${anchor}" dominant-baseline="middle" font-weight="600">${c.name}</text>`;
   });
   const poly=cats.map((c,i)=>pt(i,R*(c.score/20)).join(',')).join(' ');
   return `<svg class="radar" viewBox="0 0 460 380">${rings}${axes}
-    <polygon points="${poly}" fill="rgba(245,144,30,.18)" stroke="var(--brand)" stroke-width="2" stroke-linejoin="round"/>
-    ${cats.map((c,i)=>{const[x,y]=pt(i,R*(c.score/20));return `<circle cx="${x}" cy="${y}" r="3.5" fill="var(--brand)"/>`;}).join('')}
+    <polygon points="${poly}" fill="rgba(245,144,30,.20)" stroke="${brandCol}" stroke-width="2" stroke-linejoin="round"/>
+    ${cats.map((c,i)=>{const[x,y]=pt(i,R*(c.score/20));return `<circle cx="${x}" cy="${y}" r="3.5" fill="${brandCol}"/>`;}).join('')}
     ${labels}</svg>`;
 }
 
@@ -605,6 +620,19 @@ function resetAll(){
 }
 
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+
+/* ---------- theme ---------- */
+function cssVar(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim();}
+function resolveColor(c){ if(typeof c==='string' && c.indexOf('var(')===0){ return cssVar(c.slice(4,-1).trim())||'#000'; } return c; }
+function scToggleTheme(){
+  const d=document.documentElement;
+  const t=d.getAttribute('data-theme')==='dark'?'light':'dark';
+  d.setAttribute('data-theme',t);
+  try{localStorage.setItem('sc-theme',t);}catch(e){}
+  const ic=document.querySelector('.theme-toggle i');
+  if(ic){ic.setAttribute('data-lucide',t==='dark'?'moon':'sun');lucide.createIcons();}
+  if(step>SECTIONS.length) render();   // re-render results so the SVG charts pick up new colours
+}
 
 /* ---------- router ---------- */
 function render(){

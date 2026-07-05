@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/includes/bootstrap.php';
 require __DIR__ . '/includes/mailer.php';
+require __DIR__ . '/includes/pdf.php';
 session_start();
 
 header('Content-Type: application/json; charset=utf-8');
@@ -109,8 +110,8 @@ try {
     fail(500, 'Could not save submission');
 }
 
-// Notify the consultant. A mail failure must not lose the saved submission.
-$mail = sc_send_notification(sc_mail_config(), [
+// Build the completed scorecard PDF (attached to the notification email).
+$subForMail = [
     'id'             => $id,
     'client_name'    => $name,
     'client_company' => $company,
@@ -120,7 +121,20 @@ $mail = sc_send_notification(sc_mail_config(), [
     'percent'        => $percent,
     'band'           => $band,
     'categories'     => $categories,
-]);
+];
+$pdf = null;
+try {
+    $pdf = sc_build_pdf($subForMail + [
+        'answers' => $cleanAnswers,
+        'brand'   => sc_setting('brand_name', 'SalesCraft'),
+        'date'    => date('j M Y'),
+    ]);
+} catch (Throwable $e) {
+    $pdf = null; // never let a PDF error block the submission/email
+}
+
+// Notify the consultant. A mail failure must not lose the saved submission.
+$mail = sc_send_notification(sc_mail_config(), $subForMail, $pdf);
 
 echo json_encode([
     'ok'          => true,

@@ -16,9 +16,11 @@ require_once __DIR__ . '/PHPMailer/src/SMTP.php';
 /**
  * @param array $cfg  full config array
  * @param array $sub  ['id','client_name','client_company','client_email','total','percent','band','categories']
+ * @param ?string $pdf  optional PDF bytes to attach (the completed scorecard)
+ * @param ?string $overrideTo  optional recipient override (used by the test-email button)
  * @return array{ok:bool,error:?string}
  */
-function sc_send_notification(array $cfg, array $sub): array
+function sc_send_notification(array $cfg, array $sub, ?string $pdf = null, ?string $overrideTo = null): array
 {
     $mail = new PHPMailer(true);
     try {
@@ -35,9 +37,13 @@ function sc_send_notification(array $cfg, array $sub): array
         $mail->CharSet    = 'UTF-8';
 
         $mail->setFrom($s['from_email'], $s['from_name']);
-        $mail->addAddress($cfg['notify']['to_email'], $cfg['notify']['to_name']);
+        $mail->addAddress($overrideTo ?: $cfg['notify']['to_email'], $cfg['notify']['to_name']);
         if (!empty($sub['client_email'])) {
             $mail->addReplyTo($sub['client_email'], $sub['client_name']);
+        }
+        if ($pdf !== null && $pdf !== '') {
+            $fname = 'SalesCraft-Scorecard-' . preg_replace('/[^A-Za-z0-9]+/', '-', (string) $sub['client_name']) . '.pdf';
+            $mail->addStringAttachment($pdf, $fname, 'base64', 'application/pdf');
         }
 
         $company = $sub['client_company'] ? " ({$sub['client_company']})" : '';

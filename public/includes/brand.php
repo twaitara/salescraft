@@ -41,6 +41,8 @@ function sc_admin_head(string $title): void
         . '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">'
         . '<script src="https://unpkg.com/lucide@latest"></script>'
         . '<link rel="stylesheet" href="../assets/theme.css">'
+        // Set theme before paint (default: dark) to avoid a flash.
+        . '<script>(function(){try{var t=localStorage.getItem("sc-theme")||"dark";document.documentElement.setAttribute("data-theme",t);}catch(e){document.documentElement.setAttribute("data-theme","dark");}})();</script>'
         . '</head><body>';
 }
 
@@ -57,10 +59,16 @@ function sc_admin_topbar(string $active = ''): void
         . $link('index.php', 'submissions', 'inbox', 'Submissions')
         . $link('settings.php', 'settings', 'settings', 'Settings')
         . '<a href="index.php?logout=1" class="tb-out"><i data-lucide="log-out"></i>Sign out</a>'
+        . '<button class="tb-theme" onclick="scToggleTheme()" title="Toggle light / dark"><i data-lucide="moon"></i></button>'
         . '</nav></div></div>';
 }
 
 function sc_admin_foot(): void
 {
-    echo '<script>lucide.createIcons();</script></body></html>';
+    echo '<script>'
+        . 'function scToggleTheme(){var d=document.documentElement;var t=d.getAttribute("data-theme")==="dark"?"light":"dark";'
+        . 'd.setAttribute("data-theme",t);try{localStorage.setItem("sc-theme",t);}catch(e){}'
+        . 'var ic=document.querySelector(".tb-theme i");if(ic){ic.setAttribute("data-lucide",t==="dark"?"moon":"sun");lucide.createIcons();}}'
+        . '(function(){var t=document.documentElement.getAttribute("data-theme");var ic=document.querySelector(".tb-theme i");if(ic&&t==="light"){ic.setAttribute("data-lucide","sun");}})();'
+        . 'lucide.createIcons();</script></body></html>';
 }
