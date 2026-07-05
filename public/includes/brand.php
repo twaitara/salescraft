@@ -66,6 +66,7 @@ function sc_admin_topbar(string $active = ''): void
         . '<a class="tb-brand" href="index.php">' . sc_logo_lockup(30) . '</a>'
         . '<nav class="tb-nav">'
         . $link('index.php', 'submissions', 'inbox', 'Submissions')
+        . $link('scorecard.php', 'scorecard', 'list-checks', 'Scorecard')
         . $link('settings.php', 'settings', 'settings', 'Settings')
         . '<a href="index.php?logout=1" class="tb-out"><i data-lucide="log-out"></i>Sign out</a>'
         . '<button class="tb-theme" onclick="scToggleTheme()" title="Toggle light / dark"><i data-lucide="moon"></i></button>'

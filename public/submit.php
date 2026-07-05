@@ -47,35 +47,47 @@ if (!is_array($answers)) {
     fail(422, 'Missing answers');
 }
 
-// Recompute per-category scores + total from the raw answers (server is authoritative).
-$catCount = count(SC_CATEGORIES);
+// Recompute scores from the raw answers against the ACTIVE scorecard schema
+// (server is authoritative). Each category is snapshotted so old submissions
+// render correctly even if the admin later edits the questions.
+$sc = sc_scorecard();
 $categories = [];
 $total = 0;
+$maxTotal = 0;
 $answered = 0;
-for ($si = 0; $si < $catCount; $si++) {
+$expected = 0;
+foreach ($sc['categories'] as $si => $cat) {
+    $qs = $cat['questions'] ?? [];
     $sum = 0;
-    for ($qi = 0; $qi < SC_QUESTIONS_PER_CAT; $qi++) {
+    $qsnap = [];
+    foreach ($qs as $qi => $q) {
+        $expected++;
         $key = "$si-$qi";
-        if (isset($answers[$key])) {
-            $v = (int) $answers[$key];
-            if ($v < 1 || $v > 5) {
-                fail(422, "Answer $key out of range");
-            }
-            $sum += $v;
-            $answered++;
-        }
+        if (!isset($answers[$key])) continue;
+        $v = (int) $answers[$key];
+        if ($v < 1 || $v > 5) fail(422, "Answer $key out of range");
+        $sum += $v;
+        $answered++;
+        $qsnap[] = ['t' => (string) ($q['t'] ?? ''), 'v' => $v];
     }
-    $categories[] = ['name' => SC_CATEGORIES[$si], 'score' => $sum];
-    $total += $sum;
+    $catMax = count($qs) * 5;
+    $categories[] = [
+        'name'      => (string) ($cat['name'] ?? ''),
+        'score'     => $sum,
+        'max'       => $catMax,
+        'fix'       => (string) ($cat['fix'] ?? ''),
+        'questions' => $qsnap,
+    ];
+    $total    += $sum;
+    $maxTotal += $catMax;
 }
 
-$expected = $catCount * SC_QUESTIONS_PER_CAT;
-if ($answered !== $expected) {
+if ($expected === 0 || $answered !== $expected) {
     fail(422, "Incomplete: $answered of $expected questions answered");
 }
 
-$percent = round($total / SC_MAX * 100, 2);
-$band    = sc_band($total / SC_MAX);
+$percent = $maxTotal > 0 ? round($total / $maxTotal * 100, 2) : 0;
+$band    = sc_band($maxTotal > 0 ? $total / $maxTotal : 0);
 
 // Keep only valid, in-range answers for storage.
 $cleanAnswers = [];
@@ -97,7 +109,7 @@ try {
         $email !== '' ? $email : null,
         $phone !== '' ? $phone : null,
         $total,
-        SC_MAX,
+        $maxTotal,
         $percent,
         $band,
         json_encode($categories, JSON_UNESCAPED_UNICODE),
@@ -118,6 +130,7 @@ $subForMail = [
     'client_email'   => $email,
     'client_phone'   => $phone,
     'total'          => $total,
+    'max'            => $maxTotal,
     'percent'        => $percent,
     'band'           => $band,
     'categories'     => $categories,

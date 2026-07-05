@@ -50,16 +50,18 @@ function sc_send_notification(array $cfg, array $sub, ?string $pdf = null, ?stri
         $link    = rtrim($cfg['base_url'], '/') . '/admin/view.php?id=' . (int) $sub['id'];
         $pct     = round((float) $sub['percent']);
         $phone   = htmlspecialchars((string) ($sub['client_phone'] ?? ''), ENT_QUOTES) ?: '&mdash;';
+        $max     = (int) ($sub['max'] ?? 200);
 
-        $mail->Subject = "New scorecard: {$sub['client_name']}{$company} — {$sub['total']}/200 ({$sub['band']})";
+        $mail->Subject = "New scorecard: {$sub['client_name']}{$company} — {$sub['total']}/{$max} ({$sub['band']})";
         $mail->isHTML(true);
 
         $rows = '';
         foreach ($sub['categories'] as $c) {
+            $cmax = (int) ($c['max'] ?? 20);
             $rows .= '<tr><td style="padding:4px 12px 4px 0;color:#334155;">'
                 . htmlspecialchars($c['name'], ENT_QUOTES) . '</td>'
                 . '<td style="padding:4px 0;font-weight:700;color:#0f172a;">'
-                . (int) $c['score'] . '/20</td></tr>';
+                . (int) $c['score'] . '/' . $cmax . '</td></tr>';
         }
 
         $mail->Body = <<<HTML
@@ -70,7 +72,7 @@ function sc_send_notification(array $cfg, array $sub, ?string $pdf = null, ?stri
             <tr><td style="padding:4px 12px 4px 0;color:#64748b;">Client</td><td style="font-weight:700;">{$sub['client_name']}{$company}</td></tr>
             <tr><td style="padding:4px 12px 4px 0;color:#64748b;">Email</td><td>{$sub['client_email']}</td></tr>
             <tr><td style="padding:4px 12px 4px 0;color:#64748b;">Phone</td><td>{$phone}</td></tr>
-            <tr><td style="padding:4px 12px 4px 0;color:#64748b;">Score</td><td style="font-weight:700;">{$sub['total']}/200 &middot; {$pct}% &middot; {$sub['band']}</td></tr>
+            <tr><td style="padding:4px 12px 4px 0;color:#64748b;">Score</td><td style="font-weight:700;">{$sub['total']}/{$max} &middot; {$pct}% &middot; {$sub['band']}</td></tr>
           </table>
           <table style="border-collapse:collapse;font-size:14px;margin-bottom:20px;">{$rows}</table>
           <a href="{$link}" style="display:inline-block;background:#f5901e;color:#fff;text-decoration:none;padding:11px 20px;border-radius:10px;font-weight:600;">View full results &rarr;</a>
@@ -78,7 +80,7 @@ function sc_send_notification(array $cfg, array $sub, ?string $pdf = null, ?stri
         HTML;
 
         $mail->AltBody = "New scorecard from {$sub['client_name']}{$company}\n"
-            . "Score: {$sub['total']}/200 ({$sub['band']})\n"
+            . "Score: {$sub['total']}/{$max} ({$sub['band']})\n"
             . "Client email: {$sub['client_email']}\n"
             . "Client phone: " . ($sub['client_phone'] ?? '') . "\n"
             . "Full results: {$link}";

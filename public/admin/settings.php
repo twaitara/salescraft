@@ -46,18 +46,23 @@ if (($_POST['_action'] ?? '') === 'test') {
     if ($to !== '' && !filter_var($to, FILTER_VALIDATE_EMAIL)) {
         $flash = 'That test address is not a valid email.'; $flashType = 'err';
     } else {
+        $sc = sc_scorecard();
+        $cats = []; $total = 0; $max = 0;
+        foreach ($sc['categories'] as $cat) {
+            $qs = $cat['questions'] ?? []; $qsnap = []; $sum = 0;
+            foreach ($qs as $qi => $q) { $v = ($qi % 5) + 1; $sum += $v; $qsnap[] = ['t' => $q['t'] ?? '', 'v' => $v]; }
+            $cm = count($qs) * 5;
+            $cats[] = ['name' => $cat['name'] ?? '', 'score' => $sum, 'max' => $cm, 'fix' => $cat['fix'] ?? '', 'questions' => $qsnap];
+            $total += $sum; $max += $cm;
+        }
         $sample = [
             'id' => 0, 'client_name' => 'Test Client', 'client_company' => 'Preview Co',
             'client_email' => 'test@example.com', 'client_phone' => '+000 000 0000',
-            'total' => 128, 'percent' => 64, 'band' => 'Needs Structure',
-            'categories' => array_map(fn($n) => ['name' => $n, 'score' => 13], SC_CATEGORIES),
+            'total' => $total, 'max' => $max, 'percent' => $max ? round($total / $max * 100) : 0,
+            'band' => sc_band($max ? $total / $max : 0), 'categories' => $cats,
         ];
-        $answers = [];
-        for ($si = 0; $si < count(SC_CATEGORIES); $si++) {
-            for ($qi = 0; $qi < SC_QUESTIONS_PER_CAT; $qi++) $answers["$si-$qi"] = (($si + $qi) % 5) + 1;
-        }
         $pdf = null;
-        try { $pdf = sc_build_pdf($sample + ['answers' => $answers, 'brand' => sc_setting('brand_name', 'SalesCraft'), 'date' => date('j M Y')]); }
+        try { $pdf = sc_build_pdf($sample + ['brand' => sc_setting('brand_name', 'SalesCraft'), 'date' => date('j M Y')]); }
         catch (Throwable $e) { $pdf = null; }
 
         $dest = $to !== '' ? $to : sc_setting('consultant_email');

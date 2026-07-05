@@ -124,6 +124,34 @@ function sc_mail_config(): array
     ];
 }
 
+/**
+ * The active scorecard definition (admin-edited copy in settings, else default).
+ * Returns ['categories' => [ ['name','icon','desc','fix','questions'=>[['t','a1','a3','a5']]] ]].
+ */
+function sc_scorecard(): array
+{
+    static $cache = null;
+    if ($cache !== null) return $cache;
+    $json = sc_setting('scorecard_schema');
+    if ($json !== '') {
+        $d = json_decode($json, true);
+        if (is_array($d) && !empty($d['categories']) && is_array($d['categories'])) {
+            $cache = $d;
+            return $cache;
+        }
+    }
+    $cache = require __DIR__ . '/scorecard_default.php';
+    return $cache;
+}
+
+/** Total possible points for a scorecard schema (questions * 5). */
+function sc_scorecard_max(array $sc): int
+{
+    $n = 0;
+    foreach ($sc['categories'] as $c) $n += count($c['questions'] ?? []);
+    return $n * 5;
+}
+
 /** Score band from a 0..1 ratio — mirrors the front-end. */
 function sc_band(float $pct): string
 {

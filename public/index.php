@@ -10,6 +10,7 @@ $captchaMode  = sc_setting('captcha_mode', 'builtin');
 $requirePhone = sc_setting('require_phone', '1') === '1';
 $siteKey      = sc_setting('recaptcha_site_key');
 $captchaQ     = $captchaMode === 'builtin' ? sc_captcha_new() : '';
+$scorecard    = sc_scorecard();
 ?><!doctype html>
 <html lang="en">
 <head>
@@ -218,14 +219,16 @@ window.SC = {
   requirePhone: <?= $requirePhone ? 'true' : 'false' ?>,
   captchaMode: <?= json_encode($captchaMode) ?>,
   captchaQuestion: <?= json_encode($captchaQ) ?>,
-  recaptchaSiteKey: <?= json_encode($siteKey) ?>
+  recaptchaSiteKey: <?= json_encode($siteKey) ?>,
+  scorecard: <?= json_encode($scorecard, JSON_UNESCAPED_UNICODE) ?>
 };
 </script>
 <script>
 /* ============================================================
-   DATA — 10 categories × 4 criteria, each with 1/3/5 anchors.
+   DATA — default scorecard (fallback if the injected schema is empty).
+   The live content comes from window.SC.scorecard (admin-editable).
    ============================================================ */
-const SECTIONS = [
+const SECTIONS_DEFAULT = [
  {cat:"Sales Strategy", icon:"target", desc:"Do you have a clear, deliberate plan for who you sell to and how you hit your numbers?",
   q:[
    {t:"Clear sales goals", a1:'No targets — the goal is "sell as much as possible."', a3:"An annual revenue target exists, but it isn't broken down by quarter, month, rep or product.", a5:"Specific, time-bound targets cascaded to quarter/month/rep/product, reviewed regularly — everyone knows their number."},
@@ -298,7 +301,7 @@ const SECTIONS = [
   ]},
 ];
 
-const FIX = {
+const FIX_DEFAULT = {
  "Sales Strategy":"Write a one-page ICP and cascade a revenue target down to monthly numbers per rep.",
  "Sales Process":"Map your deal stages with entry/exit criteria and assign an owner to each.",
  "Lead Management":"Set a response-time rule (e.g. under 1 hour) and a fixed multi-touch follow-up cadence.",
@@ -312,7 +315,19 @@ const FIX = {
 };
 
 const SCOLORS=['','var(--s1)','var(--s2)','var(--s3)','var(--s4)','var(--s5)'];
-const MAX = SECTIONS.length*4*5; // 200
+
+/* Build the live scorecard from the injected schema, falling back to defaults. */
+const SCHEMA = (window.SC && SC.scorecard && Array.isArray(SC.scorecard.categories) && SC.scorecard.categories.length)
+  ? SC.scorecard.categories : null;
+const SECTIONS = SCHEMA
+  ? SCHEMA.map(c => ({cat:c.name||'', icon:c.icon||'circle', desc:c.desc||'',
+      q:(c.questions||[]).map(q => ({t:q.t||'', a1:q.a1||'', a3:q.a3||'', a5:q.a5||''}))}))
+  : SECTIONS_DEFAULT;
+const FIX = SCHEMA
+  ? (() => { const f={}; SCHEMA.forEach(c => { f[c.name]=c.fix||''; }); return f; })()
+  : FIX_DEFAULT;
+const secMax = si => (SECTIONS[si] ? SECTIONS[si].q.length*5 : 0);
+const MAX = SECTIONS.reduce((s,x) => s + x.q.length*5, 0) || 1;
 
 /* ---------- state ---------- */
 let state = JSON.parse(localStorage.getItem('salescraft')||'{}');
@@ -338,7 +353,7 @@ function renderProgress(){
 function sectionScore(si){
   let sum=0,ans=0;
   SECTIONS[si].q.forEach((_,qi)=>{const v=state.answers[si+'-'+qi]; if(v){sum+=v;ans++;}});
-  return {sum,ans,full:ans===4};
+  return {sum,ans,full:ans===SECTIONS[si].q.length};
 }
 function bandFor(pct){
   if(pct>=0.8) return {t:"Strong",c:"var(--s5)",msg:"This area is a real strength — protect and leverage it."};
@@ -488,10 +503,10 @@ function refreshSection(si){
   const box=document.getElementById('secres');
   const nb=document.getElementById('nextbtn');
   if(full){
-    const pct=sum/20, b=bandFor(pct);
+    const mx=secMax(si), pct=sum/mx, b=bandFor(pct);
     box.style.background=`linear-gradient(135deg,${b.c},${b.c})`;
     box.classList.add('show');
-    box.innerHTML=`<div class="big">${sum}<span>/20</span></div>
+    box.innerHTML=`<div class="big">${sum}<span>/${mx}</span></div>
       <div><div class="band">${b.t}</div><div class="msg">${b.msg}</div></div>`;
     nb.disabled=false;
   }else{
@@ -508,18 +523,19 @@ function goto(n){
 
 /* ---------- results ---------- */
 function renderResults(){
-  const cats=SECTIONS.map((s,si)=>({name:s.cat,score:sectionScore(si).sum}));
+  const cats=SECTIONS.map((s,si)=>({name:s.cat,score:sectionScore(si).sum,max:secMax(si)}));
   const total=cats.reduce((a,c)=>a+c.score,0);
   const pct=total/MAX;
+  const ratio=c=>c.max?c.score/c.max:0;
   let verdict;
   if(pct>=0.8) verdict={t:"Scalable Engine",c:"var(--s5)",p:"Your sales system is strong and repeatable. Focus on optimising and scaling — you can add people and volume with confidence."};
   else if(pct>=0.6) verdict={t:"Strong Foundation",c:"var(--s4)",p:"Solid fundamentals with clear pockets to tighten. Close the gaps below and you're ready to scale."};
   else if(pct>=0.4) verdict={t:"Needs Structure",c:"var(--s3)",p:"The pieces exist but inconsistency is costing you deals. Systemise your process and follow-up next."};
   else verdict={t:"High Risk",c:"var(--s1)",p:"Sales is running on heroics and luck. Prioritise the critical areas below before investing in more leads."};
 
-  const sorted=[...cats].map((c,i)=>({...c,idx:i})).sort((a,b)=>a.score-b.score);
+  const sorted=[...cats].map((c,i)=>({...c,idx:i})).sort((a,b)=>ratio(a)-ratio(b));
   const weakest=sorted.slice(0,3);
-  const strongest=[...sorted].reverse().slice(0,3).filter(c=>c.score>=14);
+  const strongest=[...sorted].reverse().slice(0,3).filter(c=>ratio(c)>=0.7);
   const R=circ(pct,verdict.c);
 
   app.innerHTML=`<div class="card results">
@@ -535,21 +551,21 @@ function renderResults(){
     <div class="submitbar" id="subbar"></div>
 
     <div class="radar-card card" style="box-shadow:none;border-color:var(--line)">
-      <h3 style="justify-content:center;margin-bottom:14px"><i data-lucide="radar"></i> Balance across all 10 areas</h3>
+      <h3 style="justify-content:center;margin-bottom:14px"><i data-lucide="radar"></i> Balance across all ${cats.length} areas</h3>
       ${radar(cats)}
     </div>
 
     <div class="grid2">
       <div class="panel card" style="box-shadow:none">
         <h3><i data-lucide="bar-chart-3"></i> Score by area</h3>
-        <p class="hint">Each area is out of 20.</p>
-        ${cats.map(c=>{const p=c.score/20;return `<div class="catbar"><div class="lab"><b>${c.name}</b><span>${c.score}/20</span></div><div class="track"><i style="width:${p*100}%;background:${bandFor(p).c}"></i></div></div>`;}).join('')}
+        <p class="hint">Each area shown as your score out of its maximum.</p>
+        ${cats.map(c=>{const p=ratio(c);return `<div class="catbar"><div class="lab"><b>${c.name}</b><span>${c.score}/${c.max}</span></div><div class="track"><i style="width:${p*100}%;background:${bandFor(p).c}"></i></div></div>`;}).join('')}
       </div>
       <div class="panel card" style="box-shadow:none">
-        <h3><i data-lucide="flame"></i> Your 3 priority fixes</h3>
+        <h3><i data-lucide="flame"></i> Your priority fixes</h3>
         <p class="hint">Lowest-scoring areas — biggest, fastest wins.</p>
-        ${weakest.map((c,i)=>`<div class="fix"><div class="rank r${i+1}">${i+1}</div><div><div class="t">${c.name} · ${c.score}/20</div><div class="d">${FIX[c.name]}</div></div></div>`).join('')}
-        ${strongest.length?`<h3 style="margin-top:20px"><i data-lucide="award"></i> Strengths to leverage</h3>${strongest.map(c=>`<div class="fix"><div class="rank" style="background:var(--s5)"><i data-lucide="check" style="width:14px"></i></div><div><div class="t">${c.name} · ${c.score}/20</div></div></div>`).join('')}`:''}
+        ${weakest.map((c,i)=>`<div class="fix"><div class="rank r${i+1}">${i+1}</div><div><div class="t">${c.name} · ${c.score}/${c.max}</div><div class="d">${FIX[c.name]||''}</div></div></div>`).join('')}
+        ${strongest.length?`<h3 style="margin-top:20px"><i data-lucide="award"></i> Strengths to leverage</h3>${strongest.map(c=>`<div class="fix"><div class="rank" style="background:var(--s5)"><i data-lucide="check" style="width:14px"></i></div><div><div class="t">${c.name} · ${c.score}/${c.max}</div></div></div>`).join('')}`:''}
       </div>
     </div>
 
@@ -621,10 +637,10 @@ function radar(cats){
     const anchor=Math.abs(lx-cx)<8?'middle':(lx>cx?'start':'end');
     labels+=`<text x="${lx}" y="${ly}" font-size="11" fill="${muted}" text-anchor="${anchor}" dominant-baseline="middle" font-weight="600">${c.name}</text>`;
   });
-  const poly=cats.map((c,i)=>pt(i,R*(c.score/20)).join(',')).join(' ');
+  const poly=cats.map((c,i)=>pt(i,R*(c.max?c.score/c.max:0)).join(',')).join(' ');
   return `<svg class="radar" viewBox="0 0 460 380">${rings}${axes}
     <polygon points="${poly}" fill="rgba(245,144,30,.20)" stroke="${brandCol}" stroke-width="2" stroke-linejoin="round"/>
-    ${cats.map((c,i)=>{const[x,y]=pt(i,R*(c.score/20));return `<circle cx="${x}" cy="${y}" r="3.5" fill="${brandCol}"/>`;}).join('')}
+    ${cats.map((c,i)=>{const[x,y]=pt(i,R*(c.max?c.score/c.max:0));return `<circle cx="${x}" cy="${y}" r="3.5" fill="${brandCol}"/>`;}).join('')}
     ${labels}</svg>`;
 }
 
