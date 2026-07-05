@@ -17,17 +17,26 @@ function sc_logo_mark(int $px = 40): string
         . '</svg>';
 }
 
-/** Full logo lockup: mark + "SalesCraft" wordmark (Sales = slate, Craft = grey). */
-function sc_logo_lockup(int $px = 34): string
+/** Orange tile containing a white hexagon-S mark. */
+function sc_logo_tile(): string
+{
+    return '<span class="sc-tile">'
+        . '<svg width="22" height="23" viewBox="0 0 48 52" fill="none" xmlns="http://www.w3.org/2000/svg">'
+        . '<path d="M24 2 45 13.75V38.25L24 50.5 3 38.25V13.75L24 2Z" fill="#ffffff"/>'
+        . '<text x="24" y="36" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="28" font-weight="800" fill="#e07d0d">S</text>'
+        . '</svg></span>';
+}
+
+/** Full logo lockup: orange tile + "SalesCraft Scorecard" wordmark. */
+function sc_logo_lockup(int $px = 40): string
 {
     $brand = sc_setting('brand_name', 'SalesCraft');
-    // Split into two tones if the brand is literally "SalesCraft".
-    if (strtolower($brand) === 'salescraft') {
-        $word = '<span class="sc-word"><b>Sales</b><span>Craft</span></span>';
+    if (strtolower(trim($brand)) === 'salescraft') {
+        $word = '<span class="sc-word"><b>SalesCraft</b> <span>Scorecard</span></span>';
     } else {
         $word = '<span class="sc-word"><b>' . sc_e($brand) . '</b></span>';
     }
-    return '<span class="sc-logo">' . sc_logo_mark($px) . $word . '</span>';
+    return '<span class="sc-logo">' . sc_logo_tile() . $word . '</span>';
 }
 
 /** Opening HTML + <head> for an admin page. */

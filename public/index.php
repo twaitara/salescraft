@@ -15,7 +15,7 @@ $captchaQ     = $captchaMode === 'builtin' ? sc_captcha_new() : '';
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title><?= sc_e($brand) ?> — Sales Diagnostic Scorecard</title>
+<title><?= sc_e($brand) ?> Scorecard — Sales Diagnostic</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest"></script>
@@ -25,37 +25,48 @@ $captchaQ     = $captchaMode === 'builtin' ? sc_captcha_new() : '';
 <script>(function(){try{var t=localStorage.getItem("sc-theme")||"dark";document.documentElement.setAttribute("data-theme",t);}catch(e){document.documentElement.setAttribute("data-theme","dark");}})();</script>
 <style>
 :root{
-  --bg:#f5f6f8; --card:#ffffff; --ink:#2b3948; --muted:#7c8b99; --line:#e7eaef;
-  --brand:#f5901e; --brand-d:#d9790f; --brand-soft:#fff3e5;
-  --slate:#2b3948; --grey:#7c8b99;
-  --surface:#fbfcfd; --surface2:#f3f5f7;
-  --s1:#ef4444; --s2:#f97316; --s3:#f59e0b; --s4:#84cc16; --s5:#16a34a;
-  --shadow:0 1px 2px rgba(43,57,72,.05),0 8px 24px rgba(43,57,72,.06);
+  --bg:#f4f6f9; --bg-2:#eef1f6; --card:#ffffff; --card-2:#ffffff; --ink:#1f2b38; --muted:#6b7885; --line:#e6eaf0;
+  --brand:#f5901e; --brand-d:#d9790f; --brand-soft:#fff3e5; --brand-glow:rgba(245,144,30,.18);
+  --slate:#1f2b38; --grey:#6b7885;
+  --surface:#fbfcfe; --surface2:#eef1f6;
+  --s1:#ef4444; --s2:#f97316; --s3:#f59e0b; --s4:#84cc16; --s5:#16a34a; --blue:#3b82f6; --violet:#8b5cf6;
+  --shadow:0 1px 2px rgba(31,43,56,.05),0 10px 30px rgba(31,43,56,.06);
+  --glass:linear-gradient(180deg,rgba(0,0,0,.015),rgba(0,0,0,0));
   --radius:16px;
 }
 :root[data-theme="dark"]{
-  --bg:#0e141b; --card:#18212b; --ink:#e8edf2; --muted:#96a3b1; --line:#27313d;
-  --brand-soft:#3a2a12; --slate:#e8edf2; --grey:#96a3b1;
-  --surface:#121a23; --surface2:#1f2833;
-  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);
+  --bg:#0a0e14; --bg-2:#0d131b; --card:#151c26; --card-2:#111823; --ink:#e8eef5; --muted:#8b97a6; --line:#232e3b;
+  --brand-soft:#3a2a12; --slate:#e8eef5; --grey:#8b97a6;
+  --surface:#101722; --surface2:#1c2632;
+  --shadow:0 1px 0 rgba(255,255,255,.03) inset,0 14px 34px rgba(0,0,0,.5);
+  --glass:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,0));
 }
 *{box-sizing:border-box}
 html,body{margin:0}
-body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink);
-  -webkit-font-smoothing:antialiased;line-height:1.5}
-.wrap{max-width:920px;margin:0 auto;padding:28px 20px 80px}
-.brandrow{display:flex;align-items:center;gap:14px;margin-bottom:22px;flex-wrap:wrap}
+body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink);
+  -webkit-font-smoothing:antialiased;line-height:1.5;min-height:100vh;background-attachment:fixed;
+  background:
+    radial-gradient(1100px 480px at 82% -8%, var(--brand-glow), transparent 60%),
+    radial-gradient(900px 500px at -8% 10%, rgba(59,130,246,.07), transparent 60%),
+    var(--bg)}
+.wrap{max-width:920px;margin:0 auto;padding:24px 20px 80px}
+.brandrow{display:flex;align-items:center;gap:14px;margin-bottom:22px;flex-wrap:wrap;
+  background-image:var(--glass);background-color:var(--card);border:1px solid var(--line);
+  border-radius:16px;padding:12px 16px;box-shadow:var(--shadow)}
 .sc-logo{display:inline-flex;align-items:center;gap:11px}
-.sc-word{font-size:20px;font-weight:800;letter-spacing:-.2px;line-height:1}
-.sc-word b{color:var(--slate);font-weight:800}
-.sc-word span{color:var(--grey);font-weight:800}
-.brandrow .tag{color:var(--muted);font-size:13px;padding-left:14px;border-left:1px solid var(--line)}
+.sc-tile{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:none;
+  background:linear-gradient(150deg,#f9a63f,#f5901e 55%,#e07d0d);box-shadow:0 6px 16px rgba(245,144,30,.4)}
+.sc-tile svg{width:22px;height:23px}
+.sc-word{font-size:19px;font-weight:800;letter-spacing:-.3px;line-height:1}
+.sc-word b{color:var(--ink);font-weight:800}
+.sc-word span{color:var(--brand);font-weight:800}
+.brandrow .tag{color:var(--muted);font-size:12.5px;padding-left:14px;border-left:1px solid var(--line)}
 .theme-toggle{margin-left:auto;background:transparent;border:1px solid var(--line);color:var(--muted);width:40px;height:40px;
   border-radius:11px;cursor:pointer;display:grid;place-items:center}
 .theme-toggle:hover{color:var(--ink);background:var(--surface2)}
 .theme-toggle svg{width:19px;height:19px}
 
-.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.card{background-image:var(--glass);background-color:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
 
 /* progress */
 .progress{display:flex;gap:6px;margin:0 0 22px}
@@ -124,14 +135,18 @@ body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;back
   background:var(--card);color:var(--ink);display:inline-flex;align-items:center;gap:8px;transition:.15s}
 .btn:hover{background:var(--surface2)}
 .btn svg{width:17px;height:17px}
-.btn.primary{background:var(--brand);color:#fff;border-color:var(--brand)}
-.btn.primary:hover{background:var(--brand-d)}
-.btn.primary:disabled{background:#f0c79a;border-color:#f0c79a;cursor:not-allowed;box-shadow:none}
+.btn.primary{background:linear-gradient(160deg,#f9a63f,#f5901e 60%,#e07d0d);color:#fff;border-color:transparent;
+  box-shadow:0 8px 20px rgba(245,144,30,.32)}
+.btn.primary:hover{filter:brightness(1.05)}
+.btn.primary:disabled{background:#c98f52;border-color:transparent;cursor:not-allowed;box-shadow:none;filter:none}
 .btn.ghost{border-color:transparent;background:transparent;color:var(--muted)}
 
 /* results */
 .results{padding:32px}
-.gauge-wrap{display:flex;flex-wrap:wrap;gap:26px;align-items:center;justify-content:center;text-align:center}
+.gauge-wrap{display:flex;flex-wrap:wrap;gap:26px;align-items:center;justify-content:center;text-align:center;
+  background:radial-gradient(520px 240px at 26% 6%, var(--brand-glow), transparent 66%);
+  border:1px solid var(--line);border-radius:16px;padding:24px}
+.verdict .badge{box-shadow:0 6px 18px rgba(0,0,0,.18)}
 .gauge{position:relative;width:200px;height:200px;flex:none}
 .gauge .num{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
 .gauge .num b{font-size:44px;font-weight:800;line-height:1}
@@ -188,7 +203,7 @@ svg.radar{max-width:460px;width:100%;height:auto}
 <div class="wrap">
   <div class="brandrow">
     <?= sc_logo_lockup(40) ?>
-    <span class="tag">Sales Diagnostic Scorecard</span>
+    <span class="tag">Score your sales engine in ~6 min</span>
     <button class="theme-toggle" onclick="scToggleTheme()" title="Toggle light / dark"><i data-lucide="moon"></i></button>
   </div>
 
