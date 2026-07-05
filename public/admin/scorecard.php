@@ -82,6 +82,12 @@ sc_admin_topbar('scorecard');
 .eq-anchors .dot{width:9px;height:9px;border-radius:50%}
 .addq{margin-top:2px}
 @media(max-width:760px){.eq-anchors{grid-template-columns:1fr}}
+@media(max-width:600px){
+  .sc-editbar{position:static;top:auto;flex-direction:column;align-items:stretch}
+  .sc-editbar > div{display:flex;gap:8px}
+  .sc-editbar .btn{flex:1;justify-content:center}
+  .ecat{padding:16px}
+}
 </style>
 
 <div class="wrap">

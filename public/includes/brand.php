@@ -60,7 +60,7 @@ function sc_admin_topbar(string $active = ''): void
 {
     $link = function (string $href, string $key, string $icon, string $label) use ($active): string {
         $cls = $active === $key ? ' class="active"' : '';
-        return '<a href="' . $href . '"' . $cls . '><i data-lucide="' . $icon . '"></i>' . $label . '</a>';
+        return '<a href="' . $href . '"' . $cls . '><i data-lucide="' . $icon . '"></i><span class="lbl">' . $label . '</span></a>';
     };
     echo '<div class="topbar"><div class="tb-inner">'
         . '<a class="tb-brand" href="index.php">' . sc_logo_lockup(30) . '</a>'
@@ -68,7 +68,7 @@ function sc_admin_topbar(string $active = ''): void
         . $link('index.php', 'submissions', 'inbox', 'Submissions')
         . $link('scorecard.php', 'scorecard', 'list-checks', 'Scorecard')
         . $link('settings.php', 'settings', 'settings', 'Settings')
-        . '<a href="index.php?logout=1" class="tb-out"><i data-lucide="log-out"></i>Sign out</a>'
+        . '<a href="index.php?logout=1" class="tb-out"><i data-lucide="log-out"></i><span class="lbl">Sign out</span></a>'
         . '<button class="tb-theme" onclick="scToggleTheme()" title="Toggle light / dark"><i data-lucide="moon"></i></button>'
         . '</nav></div></div>';
 }

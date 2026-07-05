@@ -48,6 +48,7 @@ sc_admin_topbar('submissions');
   <?php if (!$rows): ?>
     <div class="empty"><i data-lucide="clipboard-list"></i><div>No submissions yet. Share <b>your scorecard link</b> with a client to get started.</div></div>
   <?php else: ?>
+  <div class="tbl-wrap">
   <table class="tbl">
     <tr>
       <th><i data-lucide="user"></i>Client</th>
@@ -74,6 +75,7 @@ sc_admin_topbar('submissions');
       </tr>
     <?php endforeach; ?>
   </table>
+  </div>
   <?php endif; ?>
 </div>
 <?php sc_admin_foot(); ?>

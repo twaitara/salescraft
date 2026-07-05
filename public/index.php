@@ -204,6 +204,20 @@ svg.radar{max-width:460px;width:100%;height:auto}
   .scale button small{display:none}
   .section,.intro,.results{padding:22px 18px}
   .gauge-wrap{flex-direction:column}
+  .wrap{padding:18px 14px 70px}
+  .intro h2{font-size:22px}
+  .brandrow{padding:11px 14px;gap:10px}
+  .brandrow .tag{display:none}
+  .sec-toolbar{margin-bottom:8px}
+  .nav{gap:8px}
+  .btn{padding:12px 16px;font-size:14px}
+}
+@media(max-width:420px){
+  .scale{gap:6px}
+  .scale button{font-size:15px;padding:12px 2px}
+  .sc-word{font-size:17px}
+  .section-head h2{font-size:18px}
+  .verdict h2{font-size:20px}
 }
 @media print{.nav,.actions,.progress,.brandrow .tag{display:none}body{background:#fff}}
 </style>
