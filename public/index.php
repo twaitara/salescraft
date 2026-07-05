@@ -201,23 +201,42 @@ svg.radar{max-width:460px;width:100%;height:auto}
 
 @media(max-width:680px){
   .fields,.grid2{grid-template-columns:1fr}
-  .scale button small{display:none}
-  .section,.intro,.results{padding:22px 18px}
-  .gauge-wrap{flex-direction:column}
-  .wrap{padding:18px 14px 70px}
+  .section,.intro,.results{padding:20px 16px}
+  .gauge-wrap{flex-direction:column;padding:18px}
+  .wrap{padding:14px 14px 112px}            /* bottom space for the sticky action bar */
   .intro h2{font-size:22px}
   .brandrow{padding:11px 14px;gap:10px}
   .brandrow .tag{display:none}
+
+  /* Sticky progress keeps "which section" in view while scrolling */
+  .progress{position:sticky;top:0;z-index:25;margin:0 -14px 14px;padding:11px 14px;
+    background:var(--bg);border-bottom:1px solid var(--line)}
+
+  /* No-zoom, finger-sized inputs */
+  .field input{font-size:16px;min-height:50px}
+
+  /* Bigger tap targets on the 1-5 scale, with No/Partly/Yes labels back */
+  .scale{gap:7px}
+  .scale button{min-height:58px;font-size:18px;border-radius:13px}
+  .scale button small{display:block;font-size:9px}
+
+  /* Thumb-zone sticky action bar (Start, and Back/Next) */
+  .intro .nav,.section .nav{position:fixed;left:0;right:0;bottom:0;margin:0;z-index:40;
+    display:flex;gap:10px;justify-content:stretch;background:var(--card);border-top:1px solid var(--line);
+    padding:12px 14px calc(12px + env(safe-area-inset-bottom));box-shadow:0 -8px 24px rgba(0,0,0,.4)}
+  .intro .nav .btn,.section .nav .btn{flex:1;justify-content:center;padding:16px;font-size:15px;min-height:52px}
+  .section .nav .btn:first-child{flex:0 0 auto;padding:16px 18px}   /* Back stays compact */
+
   .sec-toolbar{margin-bottom:8px}
-  .nav{gap:8px}
-  .btn{padding:12px 16px;font-size:14px}
+  .sec-toolbar .btn{padding:10px 13px;min-height:44px}
+  .actions{gap:8px}
+  .actions .btn{flex:1;justify-content:center;min-height:48px}
 }
 @media(max-width:420px){
-  .scale{gap:6px}
-  .scale button{font-size:15px;padding:12px 2px}
   .sc-word{font-size:17px}
   .section-head h2{font-size:18px}
   .verdict h2{font-size:20px}
+  .q-title{font-size:15px}
 }
 @media print{.nav,.actions,.progress,.brandrow .tag{display:none}body{background:#fff}}
 </style>

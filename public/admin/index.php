@@ -2,7 +2,7 @@
 require __DIR__ . '/auth.php';
 
 $rows = sc_db()->query(
-    'SELECT id, client_name, client_company, client_email, client_phone, total, percent, band, created_at
+    'SELECT id, client_name, client_company, client_email, client_phone, total, max_score, percent, band, created_at
      FROM submissions ORDER BY created_at DESC'
 )->fetchAll();
 
@@ -60,18 +60,18 @@ sc_admin_topbar('submissions');
     </tr>
     <?php foreach ($rows as $r): ?>
       <tr>
-        <td>
-          <div style="font-weight:600"><?= sc_e($r['client_name']) ?></div>
-          <?php if ($r['client_company']): ?><div class="muted" style="font-size:12.5px"><?= sc_e($r['client_company']) ?></div><?php endif; ?>
+        <td data-label="Client">
+          <div><div style="font-weight:600"><?= sc_e($r['client_name']) ?></div>
+          <?php if ($r['client_company']): ?><div class="muted" style="font-size:12.5px"><?= sc_e($r['client_company']) ?></div><?php endif; ?></div>
         </td>
-        <td class="muted" style="font-size:13px">
-          <?= sc_e($r['client_email']) ?>
-          <?php if ($r['client_phone']): ?><div><?= sc_e($r['client_phone']) ?></div><?php endif; ?>
+        <td data-label="Contact" class="muted" style="font-size:13px">
+          <div><?= sc_e($r['client_email']) ?>
+          <?php if ($r['client_phone']): ?><div><?= sc_e($r['client_phone']) ?></div><?php endif; ?></div>
         </td>
-        <td style="font-weight:700"><?= (int) $r['total'] ?>/200 <span class="muted" style="font-weight:400">(<?= (int) round($r['percent']) ?>%)</span></td>
-        <td><span class="pill" style="background:<?= band_color($r['band']) ?>"><?= sc_e($r['band']) ?></span></td>
-        <td class="muted"><?= date('j M Y, H:i', strtotime($r['created_at'])) ?></td>
-        <td><a class="rowlink" href="view.php?id=<?= (int) $r['id'] ?>">View &rarr;</a></td>
+        <td data-label="Score" style="font-weight:700"><?= (int) $r['total'] ?>/<?= (int) ($r['max_score'] ?: 200) ?> <span class="muted" style="font-weight:400">(<?= (int) round($r['percent']) ?>%)</span></td>
+        <td data-label="Result"><span class="pill" style="background:<?= band_color($r['band']) ?>"><?= sc_e($r['band']) ?></span></td>
+        <td data-label="When" class="muted"><?= date('j M Y, H:i', strtotime($r['created_at'])) ?></td>
+        <td data-label=""><a class="rowlink" href="view.php?id=<?= (int) $r['id'] ?>">View &rarr;</a></td>
       </tr>
     <?php endforeach; ?>
   </table>

@@ -139,9 +139,29 @@ a.rowlink{color:var(--brand);text-decoration:none;font-weight:600}
 @media(max-width:600px){
   .tb-inner{padding:11px 14px;gap:8px}
   .tb-nav{gap:2px}
-  .tb-nav a{padding:9px 10px}
+  .tb-nav a{padding:10px 11px}
   .tb-nav .lbl{display:none}
-  .tb-nav a.active{padding:9px 11px}
+  .tb-nav a.active{padding:10px 12px}
   .sc-word{font-size:16px}
   .sc-tile{width:34px;height:34px}
+  /* No-zoom, finger-sized inputs across admin forms */
+  .field input,.field select,.field textarea{font-size:16px;min-height:48px}
+  .field textarea{min-height:70px}
+}
+/* Submissions table -> stacked cards on phones */
+@media(max-width:560px){
+  .tbl-wrap{overflow:visible;box-shadow:none;border-radius:0}
+  table.tbl{min-width:0;border:none;background:none;box-shadow:none}
+  .tbl thead{display:none}
+  .tbl tr{display:block;background-image:var(--glass);background-color:var(--card);border:1px solid var(--line);
+    border-radius:14px;box-shadow:var(--shadow);margin-bottom:12px;overflow:hidden}
+  .tbl tr:hover td{background:none}
+  .tbl td{display:flex;justify-content:space-between;align-items:center;gap:14px;text-align:right;
+    border:none;border-bottom:1px solid var(--line);padding:11px 15px}
+  .tbl td::before{content:attr(data-label);font-size:11px;font-weight:700;letter-spacing:.4px;
+    text-transform:uppercase;color:var(--muted);text-align:left;flex:none}
+  .tbl td[data-label=""]{border-bottom:none;justify-content:center;padding:14px}
+  .tbl td[data-label=""]::before{display:none}
+  .tbl td[data-label=""] .rowlink{display:block;width:100%;text-align:center;background:var(--brand-soft);
+    color:var(--brand);padding:11px;border-radius:10px;font-weight:700}
 }
