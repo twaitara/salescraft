@@ -54,4 +54,17 @@ $_SESSION['sc_gate'] = [
     'ts'      => time(),
 ];
 
-echo json_encode(['ok' => true]);
+// Offer to resume if this email has saved progress (safe: only after captcha).
+$progress = null;
+try {
+    $st = sc_db()->prepare('SELECT answers, step FROM progress WHERE email = ?');
+    $st->execute([$email]);
+    if ($row = $st->fetch()) {
+        $a = json_decode((string) $row['answers'], true);
+        if (is_array($a) && $a) $progress = ['answers' => $a, 'step' => (int) $row['step']];
+    }
+} catch (Throwable $e) {
+    $progress = null; // table may not exist yet
+}
+
+echo json_encode(['ok' => true, 'progress' => $progress]);

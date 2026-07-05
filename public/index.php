@@ -141,6 +141,14 @@ body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;colo
 .btn.primary:hover{filter:brightness(1.05)}
 .btn.primary:disabled{background:#c98f52;border-color:transparent;cursor:not-allowed;box-shadow:none;filter:none}
 .btn.ghost{border-color:transparent;background:transparent;color:var(--muted)}
+.btn.tiny{padding:8px 13px;font-size:13px;border-radius:10px}
+.sec-toolbar{display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px}
+#sc-toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,140%);z-index:99;
+  display:flex;align-items:center;gap:9px;padding:12px 18px;border-radius:12px;font-size:14px;font-weight:500;
+  background:linear-gradient(180deg,#1f2833,#151c26);color:#e8eef5;border:1px solid var(--line);
+  box-shadow:0 14px 34px rgba(0,0,0,.5);opacity:0;transition:transform .3s cubic-bezier(.2,.8,.2,1),opacity .3s}
+#sc-toast.show{transform:translate(-50%,0);opacity:1}
+#sc-toast svg{width:18px;height:18px;color:#34d399}
 
 /* results */
 .results{padding:32px}
@@ -449,14 +457,45 @@ async function startForm(){
       return introErr(data.error||'Please check your details.');
     }
     state.meta={name,email,phone,company};
-    state.submitted=false; step=1; save(); render();
+    state.submitted=false;
+    const p=data.progress;
+    if(p && p.answers && Object.keys(p.answers).length &&
+       confirm('We found saved progress for '+email+'.\n\nOK — resume where you left off\nCancel — start fresh')){
+      state.answers=p.answers;
+      step=Math.min(Math.max(1,p.step||1),SECTIONS.length+1);
+    }else{
+      state.answers={}; step=1;
+    }
+    save(); render();
   }catch(e){ btn.disabled=false; introErr('Network error — please try again.'); }
+}
+
+/* ---------- save progress (by email) ---------- */
+async function saveProgress(silent){
+  if(step<1) return;
+  try{
+    const r=await fetch('progress.php',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'save',answers:state.answers,step,meta:state.meta})});
+    const d=await r.json();
+    if(!silent) toast(d.ok ? ('Progress saved — resume anytime with '+esc(state.meta.email)) : (d.error||'Could not save'));
+  }catch(e){ if(!silent) toast('Could not save progress'); }
+}
+function toast(msg){
+  let t=document.getElementById('sc-toast');
+  if(!t){ t=document.createElement('div'); t.id='sc-toast'; document.body.appendChild(t); }
+  t.innerHTML='<i data-lucide="check-circle"></i> '+msg;
+  t.className='show'; lucide.createIcons();
+  clearTimeout(window.__toastT); window.__toastT=setTimeout(()=>t.className='',3200);
 }
 
 /* ---------- section ---------- */
 function renderSection(si){
   const S=SECTIONS[si];
-  app.innerHTML=`<div class="card section">
+  app.innerHTML=`<div class="sec-toolbar">
+      <button class="btn tiny" onclick="saveProgress(false)"><i data-lucide="save"></i> Save progress</button>
+      <button class="btn tiny ghost" onclick="resetAll()"><i data-lucide="rotate-ccw"></i> Reset</button>
+    </div>
+    <div class="card section">
     <div class="section-head">
       <div class="sec-ico"><i data-lucide="${S.icon}"></i></div>
       <div><div class="kicker">Section ${si+1} of ${SECTIONS.length}</div><h2>${S.cat}</h2></div>
@@ -519,6 +558,7 @@ function goto(n){
   if(n<0){n=0;}
   step=Math.max(0,Math.min(n,SECTIONS.length+1));
   save(); render(); window.scrollTo({top:0,behavior:'smooth'});
+  if(step>=1 && step<=SECTIONS.length) saveProgress(true);   // silent autosave per section
 }
 
 /* ---------- results ---------- */
@@ -646,6 +686,7 @@ function radar(cats){
 
 function resetAll(){
   if(!confirm('Clear all answers and start over?'))return;
+  fetch('progress.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'reset'})}).catch(()=>{});
   localStorage.removeItem('salescraft');
   state={answers:{},meta:{name:'',email:'',phone:'',company:''}}; step=0; render();
 }
