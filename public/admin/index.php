@@ -1,6 +1,19 @@
 <?php
 require __DIR__ . '/auth.php';
 
+// Deletes (CSRF-protected, admin-only)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && sc_csrf_ok($_POST['_csrf'] ?? '')) {
+    $act = $_POST['_action'] ?? '';
+    if ($act === 'del_sub' && !empty($_POST['id'])) {
+        sc_db()->prepare('DELETE FROM submissions WHERE id = ?')->execute([(int) $_POST['id']]);
+        header('Location: index.php?deleted=1'); exit;
+    }
+    if ($act === 'del_prog' && !empty($_POST['email'])) {
+        try { sc_db()->prepare('DELETE FROM progress WHERE email = ?')->execute([(string) $_POST['email']]); } catch (Throwable $e) {}
+        header('Location: index.php?deleted=1'); exit;
+    }
+}
+
 $rows = sc_db()->query(
     'SELECT id, client_name, client_company, client_email, client_phone, total, max_score, percent, band, created_at
      FROM submissions ORDER BY created_at DESC'
@@ -46,6 +59,7 @@ sc_admin_head('Submissions');
 sc_admin_topbar('submissions');
 ?>
 <div class="wrap">
+  <?php if (isset($_GET['deleted'])): ?><div class="flash ok"><i data-lucide="check-circle"></i>Deleted.</div><?php endif; ?>
   <div class="page-h">
     <div>
       <h1><i data-lucide="inbox"></i> Client Submissions</h1>
@@ -87,7 +101,15 @@ sc_admin_topbar('submissions');
         <td data-label="Score" style="font-weight:700"><?= (int) $r['total'] ?>/<?= (int) ($r['max_score'] ?: 200) ?> <span class="muted" style="font-weight:400">(<?= (int) round($r['percent']) ?>%)</span></td>
         <td data-label="Result"><span class="pill" style="background:<?= band_color($r['band']) ?>"><?= sc_e($r['band']) ?></span></td>
         <td data-label="When" class="muted"><?= date('j M Y, H:i', strtotime($r['created_at'])) ?></td>
-        <td data-label=""><a class="rowlink" href="view.php?id=<?= (int) $r['id'] ?>">View &rarr;</a></td>
+        <td data-label=""><div class="rowacts">
+          <a class="rowlink" href="view.php?id=<?= (int) $r['id'] ?>">View &rarr;</a>
+          <form method="post" style="display:inline" onsubmit="return confirm('Delete this submission permanently?')">
+            <input type="hidden" name="_csrf" value="<?= sc_e(sc_csrf()) ?>">
+            <input type="hidden" name="_action" value="del_sub">
+            <input type="hidden" name="id" value="<?= (int) $r['id'] ?>">
+            <button class="iconbtn danger" title="Delete submission"><i data-lucide="trash-2"></i></button>
+          </form>
+        </div></td>
       </tr>
     <?php endforeach; ?>
   </table>
@@ -134,7 +156,15 @@ sc_admin_topbar('submissions');
           </div>
         </td>
         <td data-label="Last active" class="muted"><?= date('j M Y, H:i', strtotime($p['updated_at'])) ?></td>
-        <td data-label=""><a class="rowlink" href="mailto:<?= sc_e($p['email']) ?>">Email &rarr;</a></td>
+        <td data-label=""><div class="rowacts">
+          <a class="rowlink" href="mailto:<?= sc_e($p['email']) ?>">Email &rarr;</a>
+          <form method="post" style="display:inline" onsubmit="return confirm('Delete this lead permanently?')">
+            <input type="hidden" name="_csrf" value="<?= sc_e(sc_csrf()) ?>">
+            <input type="hidden" name="_action" value="del_prog">
+            <input type="hidden" name="email" value="<?= sc_e($p['email']) ?>">
+            <button class="iconbtn danger" title="Delete lead"><i data-lucide="trash-2"></i></button>
+          </form>
+        </div></td>
       </tr>
     <?php endforeach; ?>
   </table>

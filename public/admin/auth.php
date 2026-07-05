@@ -13,6 +13,13 @@ require __DIR__ . '/../includes/brand.php';
 
 session_start();
 
+if (empty($_SESSION['sc_csrf'])) {
+    $_SESSION['sc_csrf'] = bin2hex(random_bytes(16));
+}
+/** CSRF token for admin forms. */
+function sc_csrf(): string { return (string) ($_SESSION['sc_csrf'] ?? ''); }
+function sc_csrf_ok($t): bool { return is_string($t) && hash_equals((string) ($_SESSION['sc_csrf'] ?? ''), $t); }
+
 function sc_admin_check_password(string $input): bool
 {
     global $CONFIG;

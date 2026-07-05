@@ -2,6 +2,13 @@
 require __DIR__ . '/auth.php';
 
 $id = (int) ($_GET['id'] ?? 0);
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['_action'] ?? '') === 'del_sub' && sc_csrf_ok($_POST['_csrf'] ?? '')) {
+    sc_db()->prepare('DELETE FROM submissions WHERE id = ?')->execute([$id]);
+    header('Location: index.php?deleted=1');
+    exit;
+}
+
 $stmt = sc_db()->prepare('SELECT * FROM submissions WHERE id = ?');
 $stmt->execute([$id]);
 $sub = $stmt->fetch();
@@ -36,7 +43,14 @@ sc_admin_head($sub['client_name']);
 sc_admin_topbar('submissions');
 ?>
 <div class="wrap">
-  <a class="btn ghost" href="index.php" style="padding-left:0;margin-bottom:6px"><i data-lucide="arrow-left"></i> All submissions</a>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:10px">
+    <a class="btn ghost" href="index.php" style="padding-left:0"><i data-lucide="arrow-left"></i> All submissions</a>
+    <form method="post" onsubmit="return confirm('Delete this submission permanently?')">
+      <input type="hidden" name="_csrf" value="<?= sc_e(sc_csrf()) ?>">
+      <input type="hidden" name="_action" value="del_sub">
+      <button class="btn" style="color:var(--s1);border-color:var(--line)"><i data-lucide="trash-2"></i> Delete</button>
+    </form>
+  </div>
 
   <div class="card pad" style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px;align-items:center;margin-bottom:16px">
     <div>
